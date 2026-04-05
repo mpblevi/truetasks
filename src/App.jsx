@@ -7,14 +7,15 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const DOMAIN = "@truetasks.app";
-const TIPOS = ["IRPF", "SPED", "PGDAS", "ECF", "ECD", "DCTF", "REINF", "FOLHA", "BPO", "OUTROS"];
-const STATUS_LIST = ["A Fazer", "Em Andamento", "Concluído", "Atrasado"];
+const TIPOS = ["DCTFWEB", "ECF", "ECD", "EFD CONTRIBUIÇÕES", "EFD FISCAL", "EFD REINF", "ESOCIAL", "FOLHA", "IRPF", "PGDAS"];
+const STATUS_LIST = ["A Fazer", "Em Andamento", "Revisão", "Concluído", "Atrasado"];
 
 const STATUS_STYLE = {
-  "A Fazer":      { bg: "#1e2a3a", border: "#3b82f6", text: "#93c5fd", dot: "#3b82f6" },
-  "Em Andamento": { bg: "#1e2a1e", border: "#22c55e", text: "#86efac", dot: "#22c55e" },
-  "Concluído":    { bg: "#1a2a1a", border: "#16a34a", text: "#4ade80", dot: "#16a34a" },
-  "Atrasado":     { bg: "#2a1e1e", border: "#ef4444", text: "#fca5a5", dot: "#ef4444" },
+  "A Fazer":      { bg: "#dbeafe", border: "#3b82f6", text: "#1d4ed8", dot: "#3b82f6" },
+  "Em Andamento": { bg: "#dcfce7", border: "#22c55e", text: "#15803d", dot: "#22c55e" },
+  "Revisão":      { bg: "#fef9c3", border: "#eab308", text: "#854d0e", dot: "#eab308" },
+  "Concluído":    { bg: "#dcfce7", border: "#16a34a", text: "#14532d", dot: "#16a34a" },
+  "Atrasado":     { bg: "#fee2e2", border: "#ef4444", text: "#dc2626", dot: "#ef4444" },
 };
 const PRIORIDADE_STYLE = {
   "Alta":  { color: "#f87171" },
@@ -80,12 +81,12 @@ function LoginScreen({ onLogin }) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#080f18", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Lato', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "#f0f4f8", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Lato', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=Lato:wght@400;700&display=swap" rel="stylesheet" />
-      <div style={{ background: "#0d1b2a", border: "1px solid #1e3a5f", borderRadius: 18, padding: 40, width: "100%", maxWidth: 400 }}>
+      <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 18, padding: 40, width: "100%", maxWidth: 400 }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 36, gap: 10 }}>
           <Logo size={26} />
-          <div style={{ fontSize: 13, color: "#475569" }}>Gestão de Obrigações Fiscais</div>
+          <div style={{ fontSize: 13, color: "#64748b" }}>Gestão de Obrigações Fiscais</div>
         </div>
         {erro && <div style={{ background: "#2a1e1e", border: "1px solid #ef4444", borderRadius: 8, padding: "10px 14px", color: "#fca5a5", fontSize: 13, marginBottom: 20 }}>⚠️ {erro}</div>}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -93,7 +94,7 @@ function LoginScreen({ onLogin }) {
           <div><label style={labelStyle}>Senha</label><input type="password" value={senha} onChange={e => setSenha(e.target.value)} placeholder="••••••••" style={inputStyle} onKeyDown={e => e.key === "Enter" && handleLogin()} /></div>
           <button onClick={handleLogin} disabled={loading} style={{ ...btnPrimary, marginTop: 8, opacity: loading ? 0.7 : 1 }}>{loading ? "Entrando..." : "Entrar"}</button>
         </div>
-        <div style={{ textAlign: "center", marginTop: 20, fontSize: 12, color: "#334155" }}>Não tem acesso? Solicite ao administrador.</div>
+        <div style={{ textAlign: "center", marginTop: 20, fontSize: 12, color: "#94a3b8" }}>Não tem acesso? Solicite ao administrador.</div>
       </div>
     </div>
   );
@@ -319,7 +320,7 @@ function exportarExcel() {
   }, [tarefasComStatus]);
 
   if (loading) return (
-    <div style={{ minHeight: "100vh", background: "#080f18", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", fontFamily: "'Lato', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "#f0f4f8", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", fontFamily: "'Lato', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=Lato:wght@400;700&display=swap" rel="stylesheet" />
       Carregando...
     </div>
