@@ -39,7 +39,7 @@ function addMonths(dateStr, n) {
 }
 
 const inputStyle = {
-  background: "#f8fafc", border: "1px solid #1e3a5f", borderRadius: 8,
+  background: "#white", border: "1px solid #1e3a5f", borderRadius: 8,
   color: "#e2e8f0", padding: "10px 14px", fontSize: 14, width: "100%",
   outline: "none", fontFamily: "'Lato', sans-serif", boxSizing: "border-box",
 };
@@ -396,7 +396,7 @@ function exportarExcel() {
         <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
             <thead>
-              <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+              <tr style={{ background: "#white", borderBottom: "1px solid #e2e8f0" }}>
                 {["Cliente", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Status", "Ações"].map(h => (
                   <th key={h} style={{ padding: "13px 12px", textAlign: "left", fontSize: 11, color: "#475569", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                 ))}
