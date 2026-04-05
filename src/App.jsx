@@ -328,13 +328,13 @@ function exportarExcel() {
   if (!user || !profile) return <LoginScreen onLogin={(u, p) => { setUser(u); setProfile(p); }} />;
 
   return (
-    <div style={{ minHeight: "100vh", width: "100%", background: "#080f18", fontFamily: "'Lato', sans-serif", color: "#e2e8f0" }}>
+    <div style={{ minHeight: "100vh", width: "100%", background: "#f0f4f8", fontFamily: "'Lato', sans-serif", color: "#1e293b" }}>
       <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=Lato:wght@400;700&display=swap" rel="stylesheet" />
 
       {painelUsuarios && <PainelUsuarios profiles={profiles} onAtualizar={carregarProfiles} onFechar={() => setPainelUsuarios(false)} />}
 
       {/* HEADER */}
-      <div style={{ background: "linear-gradient(135deg, #0d1b2a, #0a1628)", borderBottom: "1px solid #1e3a5f", padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+      <div style={{ background: "#1a56db", borderBottom: "none", padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <Logo size={20} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div style={{ textAlign: "right" }}>
@@ -343,12 +343,12 @@ function exportarExcel() {
           </div>
           {isAdmin && (
             <>
-              <button onClick={() => setPainelUsuarios(true)} style={{ background: "#1e3a5f", border: "1px solid #2a4a7f", borderRadius: 9, color: "#93c5fd", padding: "9px 16px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>👥 Usuários</button>
-              <button onClick={gerarProximoMes} disabled={gerandoRecorrentes} style={{ background: "#1a2a1e", border: "1px solid #22c55e", borderRadius: 9, color: "#86efac", padding: "9px 16px", fontSize: 13, cursor: "pointer", fontWeight: 600, opacity: gerandoRecorrentes ? 0.7 : 1 }}>🔄 Gerar Próximo Mês</button>
-              <button onClick={abrirNova} style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)", border: "none", borderRadius: 9, color: "#fff", padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Nova Tarefa</button>
+              <button onClick={() => setPainelUsuarios(true)} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 9, color: "white", padding: "9px 16px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>👥 Usuários</button>
+              <button onClick={gerarProximoMes} disabled={gerandoRecorrentes} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 9, color: "white", padding: "9px 16px", fontSize: 13, cursor: "pointer", fontWeight: 600, opacity: gerandoRecorrentes ? 0.7 : 1 }}>🔄 Gerar Próximo Mês</button>
+              <button onClick={abrirNova} style={{ background: "white", border: "none", borderRadius: 9, color: "#1a56db", padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Nova Tarefa</button>
             </>
           )}
-          <button onClick={handleLogout} style={{ background: "#1e2a3a", border: "1px solid #1e3a5f", borderRadius: 9, color: "#64748b", padding: "9px 16px", fontSize: 13, cursor: "pointer" }}>Sair</button>
+          <button onClick={handleLogout} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 9, color: "rgba(255,255,255,0.8)", padding: "9px 16px", fontSize: 13, cursor: "pointer" }}>Sair</button>
         </div>
       </div>
 
@@ -364,7 +364,7 @@ function exportarExcel() {
             const st = STATUS_STYLE[s];
             return (
               <div key={s} onClick={() => setFiltroStatus(filtroStatus === s ? "Todos" : s)}
-                style={{ background: filtroStatus === s ? st.bg : "#0d1b2a", border: `1px solid ${filtroStatus === s ? st.border : "#1e3a5f"}`, borderRadius: 12, padding: "16px 20px", cursor: "pointer", transition: "all .2s" }}>
+                style={{ background: "white", border: `1px solid ${st.border}`, borderTop: `3px solid ${st.border}`, borderRadius: 12, padding: "16px 20px", cursor: "pointer", transition: "all .2s", opacity: filtroStatus === s || filtroStatus === "Todos" ? 1 : 0.5 }}>
                 <div style={{ fontSize: 28, fontWeight: 700, color: st.border, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{n}</div>
                 <div style={{ fontSize: 11, color: "#64748b", marginTop: 4, fontWeight: 600 }}>{s.toUpperCase()}</div>
               </div>
@@ -392,10 +392,10 @@ function exportarExcel() {
         </div>
 
         {/* TABELA */}
-        <div style={{ background: "#0d1b2a", border: "1px solid #1e3a5f", borderRadius: 14, overflow: "auto" }}>
+        <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
             <thead>
-              <tr style={{ background: "#0a1628", borderBottom: "1px solid #1e3a5f" }}>
+              <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
                 {["Cliente", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Status", "Ações"].map(h => (
                   <th key={h} style={{ padding: "13px 12px", textAlign: "left", fontSize: 11, color: "#475569", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                 ))}
@@ -403,7 +403,7 @@ function exportarExcel() {
             </thead>
             <tbody>
               {filtradas.length === 0 && (
-                <tr><td colSpan={9} style={{ padding: 40, textAlign: "center", color: "#334155" }}>Nenhuma tarefa encontrada.</td></tr>
+                <tr><td colSpan={9} style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>Nenhuma tarefa encontrada.</td></tr>
               )}
               {filtradas.map((t, i) => {
                 const st = STATUS_STYLE[t.status];
@@ -414,8 +414,8 @@ function exportarExcel() {
                   <tr key={t.id} style={{ borderBottom: "1px solid #111f30", background: i % 2 === 0 ? "transparent" : "#0a1220" }}
                     onMouseEnter={e => e.currentTarget.style.background = "#0f1f33"}
                     onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? "transparent" : "#0a1220"}>
-                    <td style={{ padding: "12px", fontWeight: 600, fontSize: 13, color: "#cbd5e1" }}>{t.cliente}</td>
-                    <td style={{ padding: "12px" }}><span style={{ background: "#0f2a4a", border: "1px solid #1e3a5f", borderRadius: 6, padding: "2px 8px", fontSize: 11, color: "#60a5fa", fontWeight: 600 }}>{t.tipo}</span></td>
+                    <td style={{ padding: "12px", fontWeight: 600, fontSize: 13, color: "#1e293b" }}>{t.cliente}</td>
+                    <td style={{ padding: "12px" }}><span style={{ background: "#dbeafe", border: "none", borderRadius: 6, padding: "2px 8px", fontSize: 11, color: "#1d4ed8", fontWeight: 600 }}>{t.tipo}</span></td>
                     <td style={{ padding: "12px", fontSize: 12, color: internoAtrasado ? "#f87171" : "#94a3b8", fontWeight: internoAtrasado ? 700 : 400 }}>{formatDate(t.prazo_interno)}</td>
                     <td style={{ padding: "12px", fontSize: 12, color: legalAtrasado ? "#f87171" : "#64748b", fontWeight: legalAtrasado ? 700 : 400 }}>{formatDate(t.prazo_legal)}</td>
                     <td style={{ padding: "12px", fontSize: 12, color: "#94a3b8" }}>{t.responsavel_nome}</td>
