@@ -308,7 +308,7 @@ export default function App() {
   if (!user || !profile) return <LoginScreen onLogin={(u, p) => { setUser(u); setProfile(p); }} />;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#080f18", fontFamily: "'Lato', sans-serif", color: "#e2e8f0" }}>
+    <div style={{ minHeight: "100vh", width: "100%", background: "#080f18", fontFamily: "'Lato', sans-serif", color: "#e2e8f0" }}>
       <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=Lato:wght@400;700&display=swap" rel="stylesheet" />
 
       {painelUsuarios && <PainelUsuarios profiles={profiles} onAtualizar={carregarProfiles} onFechar={() => setPainelUsuarios(false)} />}
@@ -332,7 +332,7 @@ export default function App() {
         </div>
       </div>
 
-      <div style={{ padding: "28px 32px" }}>
+      <div style={{ padding: "28px 32px", width: "100%" }}>
 
         {msgRecorrente && (
           <div style={{ background: "#1a3a2a", border: "1px solid #22c55e", borderRadius: 10, padding: "12px 20px", color: "#86efac", fontSize: 14, marginBottom: 20 }}>{msgRecorrente}</div>
