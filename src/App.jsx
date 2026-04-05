@@ -279,9 +279,24 @@ export default function App() {
     setGerandoRecorrentes(false);
   }
 
-  function exportarExcel() {     const headers = ["Cliente", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Status"];     const rows = filtradas.map(t => [       t.cliente, t.tipo,       formatDate(t.prazo_interno),       formatDate(t.prazo_legal),       t.responsavel_nome,       t.status     ]);     const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(";")).join("
-");     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });     const url = URL.createObjectURL(blob);     const a = document.createElement("a");     a.href = url; a.download = "truetasks_relatorio.csv"; a.click();     URL.revokeObjectURL(url);   }    const isAdmin = profile?.cargo === "admin";
+ function exportarExcel() {
+    const headers = ["Cliente", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Status"];
+    const rows = filtradas.map(t => [
+      t.cliente, t.tipo,
+      formatDate(t.prazo_interno),
+      formatDate(t.prazo_legal),
+      t.responsavel_nome,
+      t.status
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(";")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "truetasks_relatorio.csv"; a.click();
+    URL.revokeObjectURL(url);
+  }
 
+  const isAdmin = profile?.cargo === "admin";
   const tarefasComStatus = tarefas.map(t => ({
     ...t, status: isAtrasado(t.prazo_interno, t.prazo_legal, t.status) ? "Atrasado" : t.status
   }));
@@ -315,7 +330,7 @@ export default function App() {
       {painelUsuarios && <PainelUsuarios profiles={profiles} onAtualizar={carregarProfiles} onFechar={() => setPainelUsuarios(false)} />}
 
       {/* HEADER */}
-      <div style={{ background: "linear-gradient(135deg, #0d1b2a, #0a1628)", borderBottom: "1px solid #1e3a5f", padding: "16px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+      <div style={{ background: "linear-gradient(135deg, #0d1b2a, #0a1628)", borderBottom: "1px solid #1e3a5f", padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <Logo size={20} />
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div style={{ textAlign: "right" }}>
@@ -333,7 +348,7 @@ export default function App() {
         </div>
       </div>
 
-      <div style={{ padding: "28px 32px", width: "100%" }}>
+      <div style={{ padding: "28px 20px", boxSizing: "border-box", width: "100%", overflowX: "hidden" }}>
 
         {msgRecorrente && (
           <div style={{ background: "#1a3a2a", border: "1px solid #22c55e", borderRadius: 10, padding: "12px 20px", color: "#86efac", fontSize: 14, marginBottom: 20 }}>{msgRecorrente}</div>
