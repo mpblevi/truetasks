@@ -58,7 +58,7 @@ function Logo({ size = 24 }) {
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <div style={{ width: size + 8, height: size + 8, background: "linear-gradient(135deg, #0ea5e9, #0284c7)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.7 }}>✓</div>
       <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: size, fontWeight: 800, color: "#e2e8f0", letterSpacing: -0.5 }}>
-        True<span style={{ color: "#0ea5e9" }}>Tasks</span>
+        <span style={{ color: "#1a56db" }}>True</span><span style={{ color: "#0ea5e9" }}>Tasks</span>
       </span>
     </div>
   );
