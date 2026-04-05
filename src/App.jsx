@@ -386,7 +386,7 @@ function exportarExcel() {
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-          <button onClick={exportarExcel} style={{ background: "#1a3a2a", border: "1px solid #22c55e", borderRadius: 9, color: "#86efac", padding: "9px 18px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>
+          <button onClick={exportarExcel} style={{ background: "#f0fdf4", border: "1px solid #22c55e", borderRadius: 9, color: "#15803d", padding: "9px 18px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>
             📥 Exportar Excel
           </button>
         </div>
@@ -426,8 +426,8 @@ function exportarExcel() {
                     </td>
                     <td style={{ padding: "12px" }}>
                       <div style={{ display: "flex", gap: 6 }}>
-                        <button onClick={() => setDetalhes(t)} style={{ background: "#1e3a5f", border: "none", borderRadius: 7, color: "#93c5fd", padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Ver</button>
-                        {(isAdmin || t.responsavel_id === user.id) && <button onClick={() => abrirEditar(t)} style={{ background: "#1a3a2a", border: "none", borderRadius: 7, color: "#86efac", padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Editar</button>}
+                        <button onClick={() => setDetalhes(t)} style={{ background: "#dbeafe", border: "none", borderRadius: 7, color: "#1d4ed8", padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Ver</button>
+                        {(isAdmin || t.responsavel_id === user.id) && <button onClick={() => abrirEditar(t)} style={{ background: "#dcfce7", border: "none", borderRadius: 7, color: "#15803d", padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Editar</button>}
                       </div>
                     </td>
                   </tr>
