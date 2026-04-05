@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react"; 
+import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs";
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = "https://womtpzhfbtqijqcqxujb.supabase.co";
@@ -279,7 +280,7 @@ export default function App() {
     setGerandoRecorrentes(false);
   }
 
- function exportarExcel() {
+function exportarExcel() {
     const headers = ["Cliente", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Status"];
     const rows = filtradas.map(t => [
       t.cliente, t.tipo,
@@ -288,14 +289,17 @@ export default function App() {
       t.responsavel_nome,
       t.status
     ]);
-    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(";")).join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "truetasks_relatorio.csv"; a.click();
-    URL.revokeObjectURL(url);
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: "0D1B2A" } } };
+    headers.forEach((_, i) => {
+      const cell = XLSX.utils.encode_cell({ r: 0, c: i });
+      if (ws[cell]) ws[cell].s = headerStyle;
+    });
+    ws["!cols"] = [{ wch: 30 }, { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 }];
+    XLSX.utils.book_append_sheet(wb, ws, "Tarefas");
+    XLSX.writeFile(wb, "truetasks_relatorio.xlsx");
   }
-
   const isAdmin = profile?.cargo === "admin";
   const tarefasComStatus = tarefas.map(t => ({
     ...t, status: isAtrasado(t.prazo_interno, t.prazo_legal, t.status) ? "Atrasado" : t.status
