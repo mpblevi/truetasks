@@ -332,7 +332,7 @@ export default function App() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "28px 20px" }}>
+      <div style={{ padding: "28px 20px" }}>
 
         {msgRecorrente && (
           <div style={{ background: "#1a3a2a", border: "1px solid #22c55e", borderRadius: 10, padding: "12px 20px", color: "#86efac", fontSize: 14, marginBottom: 20 }}>{msgRecorrente}</div>
@@ -367,7 +367,7 @@ export default function App() {
 
         {/* TABELA */}
         <div style={{ background: "#0d1b2a", border: "1px solid #1e3a5f", borderRadius: 14, overflow: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
             <thead>
               <tr style={{ background: "#0a1628", borderBottom: "1px solid #1e3a5f" }}>
                 {["Cliente", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Status", "Ações"].map(h => (
@@ -432,7 +432,6 @@ export default function App() {
                 <input type="date" value={form.prazo_legal} onChange={e => setForm(f => ({ ...f, prazo_legal: e.target.value }))} style={inputStyle} />
                 <div style={{ fontSize: 11, color: "#475569", marginTop: 4 }}>Prazo oficial de entrega</div>
               </div>
-              <div><label style={labelStyle}>Prioridade</label><select value={form.prioridade} onChange={e => setForm(f => ({ ...f, prioridade: e.target.value }))} style={inputStyle}>{["Alta", "Média", "Baixa"].map(p => <option key={p}>{p}</option>)}</select></div>
               <div><label style={labelStyle}>Status</label><select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} style={inputStyle}>{STATUS_LIST.filter(s => s !== "Atrasado").map(s => <option key={s}>{s}</option>)}</select></div>
               <div style={{ gridColumn: "1/-1" }}><label style={labelStyle}>Observações</label><textarea value={form.obs} onChange={e => setForm(f => ({ ...f, obs: e.target.value }))} placeholder="Anotações adicionais..." style={{ ...inputStyle, height: 70, resize: "vertical" }} /></div>
               <div style={{ gridColumn: "1/-1", display: "flex", alignItems: "center", gap: 12, background: "#0a1220", borderRadius: 10, padding: "14px 16px" }}>
