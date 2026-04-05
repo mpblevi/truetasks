@@ -279,7 +279,8 @@ export default function App() {
     setGerandoRecorrentes(false);
   }
 
-  const isAdmin = profile?.cargo === "admin";
+  function exportarExcel() {     const headers = ["Cliente", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Status"];     const rows = filtradas.map(t => [       t.cliente, t.tipo,       formatDate(t.prazo_interno),       formatDate(t.prazo_legal),       t.responsavel_nome,       t.status     ]);     const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(";")).join("
+");     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });     const url = URL.createObjectURL(blob);     const a = document.createElement("a");     a.href = url; a.download = "truetasks_relatorio.csv"; a.click();     URL.revokeObjectURL(url);   }    const isAdmin = profile?.cargo === "admin";
 
   const tarefasComStatus = tarefas.map(t => ({
     ...t, status: isAtrasado(t.prazo_interno, t.prazo_legal, t.status) ? "Atrasado" : t.status
@@ -363,6 +364,12 @@ export default function App() {
             <option value="Todos">Todos os tipos</option>
             {TIPOS.map(t => <option key={t}>{t}</option>)}
           </select>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+          <button onClick={exportarExcel} style={{ background: "#1a3a2a", border: "1px solid #22c55e", borderRadius: 9, color: "#86efac", padding: "9px 18px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>
+            📥 Exportar Excel
+          </button>
         </div>
 
         {/* TABELA */}
