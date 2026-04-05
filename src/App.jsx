@@ -39,7 +39,7 @@ function addMonths(dateStr, n) {
 }
 
 const inputStyle = {
-  background: "#0f1923", border: "1px solid #1e3a5f", borderRadius: 8,
+  background: "#f8fafc", border: "1px solid #1e3a5f", borderRadius: 8,
   color: "#e2e8f0", padding: "10px 14px", fontSize: 14, width: "100%",
   outline: "none", fontFamily: "'Lato', sans-serif", boxSizing: "border-box",
 };
