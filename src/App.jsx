@@ -39,7 +39,7 @@ function addMonths(dateStr, n) {
 const inputStyle = {
   background: "#0f1923", border: "1px solid #1e3a5f", borderRadius: 8,
   color: "#e2e8f0", padding: "10px 14px", fontSize: 14, width: "100%",
-  outline: "none", fontFamily: "'Barlow', sans-serif", boxSizing: "border-box",
+  outline: "none", fontFamily: "'Lato', sans-serif", boxSizing: "border-box",
 };
 const labelStyle = {
   fontSize: 12, color: "#64748b", fontWeight: 600, letterSpacing: 1,
@@ -48,14 +48,14 @@ const labelStyle = {
 const btnPrimary = {
   background: "linear-gradient(135deg, #0ea5e9, #0284c7)", border: "none",
   borderRadius: 9, color: "#fff", padding: "10px 28px", fontSize: 14,
-  fontWeight: 700, cursor: "pointer", fontFamily: "'Barlow', sans-serif", width: "100%",
+  fontWeight: 700, cursor: "pointer", fontFamily: "'Lato', sans-serif", width: "100%",
 };
 
 function Logo({ size = 24 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <div style={{ width: size + 8, height: size + 8, background: "linear-gradient(135deg, #0ea5e9, #0284c7)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.7 }}>✓</div>
-      <span style={{ fontFamily: "'Exo 2', sans-serif", fontSize: size, fontWeight: 800, color: "#e2e8f0", letterSpacing: -0.5 }}>
+      <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: size, fontWeight: 800, color: "#e2e8f0", letterSpacing: -0.5 }}>
         True<span style={{ color: "#0ea5e9" }}>Tasks</span>
       </span>
     </div>
@@ -79,8 +79,8 @@ function LoginScreen({ onLogin }) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#080f18", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Barlow', sans-serif" }}>
-      <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <div style={{ minHeight: "100vh", background: "#080f18", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Lato', sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=Lato:wght@400;700&display=swap" rel="stylesheet" />
       <div style={{ background: "#0d1b2a", border: "1px solid #1e3a5f", borderRadius: 18, padding: 40, width: "100%", maxWidth: 400 }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 36, gap: 10 }}>
           <Logo size={26} />
@@ -131,7 +131,7 @@ function PainelUsuarios({ profiles, onAtualizar, onFechar }) {
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
       <div style={{ background: "#0d1b2a", border: "1px solid #1e3a5f", borderRadius: 16, padding: 32, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-          <div style={{ fontFamily: "'Exo 2', sans-serif", fontSize: 18, fontWeight: 800, color: "#0ea5e9" }}>👥 Gerenciar Usuários</div>
+          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#0ea5e9" }}>👥 Gerenciar Usuários</div>
           <button onClick={onFechar} style={{ background: "none", border: "none", color: "#475569", fontSize: 22, cursor: "pointer" }}>×</button>
         </div>
         {msg && <div style={{ background: "#1a3a2a", border: "1px solid #22c55e", borderRadius: 8, padding: "10px 14px", color: "#86efac", fontSize: 13, marginBottom: 16 }}>{msg}</div>}
@@ -299,8 +299,8 @@ export default function App() {
   }, [tarefasComStatus]);
 
   if (loading) return (
-    <div style={{ minHeight: "100vh", background: "#080f18", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", fontFamily: "'Barlow', sans-serif" }}>
-      <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <div style={{ minHeight: "100vh", background: "#080f18", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", fontFamily: "'Lato', sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=Lato:wght@400;700&display=swap" rel="stylesheet" />
       Carregando...
     </div>
   );
@@ -308,8 +308,8 @@ export default function App() {
   if (!user || !profile) return <LoginScreen onLogin={(u, p) => { setUser(u); setProfile(p); }} />;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#080f18", fontFamily: "'Barlow', sans-serif", color: "#e2e8f0" }}>
-      <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <div style={{ minHeight: "100vh", background: "#080f18", fontFamily: "'Lato', sans-serif", color: "#e2e8f0" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=Lato:wght@400;700&display=swap" rel="stylesheet" />
 
       {painelUsuarios && <PainelUsuarios profiles={profiles} onAtualizar={carregarProfiles} onFechar={() => setPainelUsuarios(false)} />}
 
@@ -332,7 +332,7 @@ export default function App() {
         </div>
       </div>
 
-      <div style={{ padding: "28px 20px" }}>
+      <div style={{ padding: "28px 32px" }}>
 
         {msgRecorrente && (
           <div style={{ background: "#1a3a2a", border: "1px solid #22c55e", borderRadius: 10, padding: "12px 20px", color: "#86efac", fontSize: 14, marginBottom: 20 }}>{msgRecorrente}</div>
@@ -345,7 +345,7 @@ export default function App() {
             return (
               <div key={s} onClick={() => setFiltroStatus(filtroStatus === s ? "Todos" : s)}
                 style={{ background: filtroStatus === s ? st.bg : "#0d1b2a", border: `1px solid ${filtroStatus === s ? st.border : "#1e3a5f"}`, borderRadius: 12, padding: "16px 20px", cursor: "pointer", transition: "all .2s" }}>
-                <div style={{ fontSize: 28, fontWeight: 700, color: st.border, fontFamily: "'Exo 2', sans-serif" }}>{n}</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: st.border, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{n}</div>
                 <div style={{ fontSize: 11, color: "#64748b", marginTop: 4, fontWeight: 600 }}>{s.toUpperCase()}</div>
               </div>
             );
@@ -417,7 +417,7 @@ export default function App() {
       {modal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}>
           <div style={{ background: "#0d1b2a", border: "1px solid #1e3a5f", borderRadius: 16, padding: 32, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto" }}>
-            <div style={{ fontFamily: "'Exo 2', sans-serif", fontSize: 18, fontWeight: 800, color: "#0ea5e9", marginBottom: 24 }}>{editando ? "✏️ Editar Tarefa" : "➕ Nova Tarefa"}</div>
+            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#0ea5e9", marginBottom: 24 }}>{editando ? "✏️ Editar Tarefa" : "➕ Nova Tarefa"}</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div style={{ gridColumn: "1/-1" }}><label style={labelStyle}>Cliente *</label><input value={form.cliente} onChange={e => setForm(f => ({ ...f, cliente: e.target.value }))} placeholder="Nome do cliente ou empresa" style={inputStyle} /></div>
               <div><label style={labelStyle}>Tipo de Obrigação</label><select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))} style={inputStyle}>{TIPOS.map(t => <option key={t}>{t}</option>)}</select></div>
@@ -460,7 +460,7 @@ export default function App() {
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}>
             <div style={{ background: "#0d1b2a", border: `1px solid ${st.border}`, borderRadius: 16, padding: 32, width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-                <div style={{ fontFamily: "'Exo 2', sans-serif", fontSize: 18, fontWeight: 800, color: "#e2e8f0" }}>{t.cliente}</div>
+                <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#e2e8f0" }}>{t.cliente}</div>
                 <button onClick={() => setDetalhes(null)} style={{ background: "none", border: "none", color: "#475569", fontSize: 22, cursor: "pointer" }}>×</button>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
