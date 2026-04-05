@@ -370,7 +370,7 @@ export default function App() {
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
             <thead>
               <tr style={{ background: "#0a1628", borderBottom: "1px solid #1e3a5f" }}>
-                {["Prior.", "Cliente", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Status", "Rec.", "Ações"].map(h => (
+                {["Cliente", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Status", "Ações"].map(h => (
                   <th key={h} style={{ padding: "13px 12px", textAlign: "left", fontSize: 11, color: "#475569", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
@@ -388,7 +388,6 @@ export default function App() {
                   <tr key={t.id} style={{ borderBottom: "1px solid #111f30", background: i % 2 === 0 ? "transparent" : "#0a1220" }}
                     onMouseEnter={e => e.currentTarget.style.background = "#0f1f33"}
                     onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? "transparent" : "#0a1220"}>
-                    <td style={{ padding: "12px" }}><span style={{ color: pr.color, fontSize: 14 }}>●</span></td>
                     <td style={{ padding: "12px", fontWeight: 600, fontSize: 13, color: "#cbd5e1" }}>{t.cliente}</td>
                     <td style={{ padding: "12px" }}><span style={{ background: "#0f2a4a", border: "1px solid #1e3a5f", borderRadius: 6, padding: "2px 8px", fontSize: 11, color: "#60a5fa", fontWeight: 600 }}>{t.tipo}</span></td>
                     <td style={{ padding: "12px", fontSize: 12, color: internoAtrasado ? "#f87171" : "#94a3b8", fontWeight: internoAtrasado ? 700 : 400 }}>{formatDate(t.prazo_interno)}</td>
@@ -399,7 +398,6 @@ export default function App() {
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: st.dot }} />{t.status}
                       </span>
                     </td>
-                    <td style={{ padding: "12px", textAlign: "center" }}>{t.recorrente ? <span title="Recorrente">🔄</span> : <span style={{ color: "#1e3a5f" }}>—</span>}</td>
                     <td style={{ padding: "12px" }}>
                       <div style={{ display: "flex", gap: 6 }}>
                         <button onClick={() => setDetalhes(t)} style={{ background: "#1e3a5f", border: "none", borderRadius: 7, color: "#93c5fd", padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Ver</button>
@@ -425,12 +423,12 @@ export default function App() {
               <div><label style={labelStyle}>Tipo de Obrigação</label><select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))} style={inputStyle}>{TIPOS.map(t => <option key={t}>{t}</option>)}</select></div>
               <div><label style={labelStyle}>Responsável</label><select value={form.responsavel_id} onChange={e => setForm(f => ({ ...f, responsavel_id: e.target.value }))} style={inputStyle}><option value="">Selecione...</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
               <div>
-                <label style={labelStyle}>📅 Prazo Interno</label>
+                <label style={labelStyle}> Prazo Interno</label>
                 <input type="date" value={form.prazo_interno} onChange={e => setForm(f => ({ ...f, prazo_interno: e.target.value }))} style={inputStyle} />
                 <div style={{ fontSize: 11, color: "#475569", marginTop: 4 }}>Prazo do escritório</div>
               </div>
               <div>
-                <label style={labelStyle}>⚖️ Prazo Legal</label>
+                <label style={labelStyle}> Prazo Legal</label>
                 <input type="date" value={form.prazo_legal} onChange={e => setForm(f => ({ ...f, prazo_legal: e.target.value }))} style={inputStyle} />
                 <div style={{ fontSize: 11, color: "#475569", marginTop: 4 }}>Prazo oficial de entrega</div>
               </div>
@@ -470,8 +468,8 @@ export default function App() {
                 {[
                   ["Tipo", t.tipo],
                   ["Responsável", t.responsavel_nome],
-                  ["📅 Prazo Interno", <span style={{ color: t.prazo_interno < today() && t.status !== "Concluído" ? "#f87171" : "#cbd5e1" }}>{formatDate(t.prazo_interno)}</span>],
-                  ["⚖️ Prazo Legal", <span style={{ color: t.prazo_legal < today() && t.status !== "Concluído" ? "#f87171" : "#cbd5e1" }}>{formatDate(t.prazo_legal)}</span>],
+                  [" Prazo Interno", <span style={{ color: t.prazo_interno < today() && t.status !== "Concluído" ? "#f87171" : "#cbd5e1" }}>{formatDate(t.prazo_interno)}</span>],
+                  [" Prazo Legal", <span style={{ color: t.prazo_legal < today() && t.status !== "Concluído" ? "#f87171" : "#cbd5e1" }}>{formatDate(t.prazo_legal)}</span>],
                   ["Prioridade", <span style={{ color: pr.color }}>{t.prioridade}</span>],
                   ["Recorrente", t.recorrente ? "🔄 Sim" : "Não"],
                 ].map(([k, v]) => (
