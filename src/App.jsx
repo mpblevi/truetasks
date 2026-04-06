@@ -50,10 +50,10 @@ const BTN_PRIMARY = {
 function Logo({ size = 24, dark = false }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <div style={{ width: size + 8, height: size + 8, background: dark ? "white" : "linear-gradient(135deg, #1a56db, #0ea5e9)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.7, color: dark ? "#1a56db" : "white", fontWeight: 900 }}>✓</div>
+      <div style={{ width: size + 8, height: size + 8, background: dark ? "linear-gradient(135deg, #1a56db, #0ea5e9)" : "white", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.7, color: dark ? "white" : "#1a56db", fontWeight: 900 }}>✓</div>
       <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: size, fontWeight: 800, letterSpacing: -0.5 }}>
-        <span style={{ color: dark ? "#1a56db" : "white" }}>True</span>
-        <span style={{ color: dark ? "#0ea5e9" : "#93c5fd" }}>Tasks</span>
+        <span style={{ color: dark ? "white" : "#1a56db" }}>True</span>
+        <span style={{ color: dark ? "#93c5fd" : "#0ea5e9" }}>Tasks</span>
       </span>
     </div>
   );
@@ -91,6 +91,87 @@ function LoginScreen({ onLogin }) {
           <button onClick={handleLogin} disabled={loading} style={{ ...BTN_PRIMARY, marginTop: 8, opacity: loading ? 0.7 : 1 }}>{loading ? "Entrando..." : "Entrar"}</button>
         </div>
         <div style={{ textAlign: "center", marginTop: 20, fontSize: 12, color: "#94a3b8" }}>Não tem acesso? Solicite ao administrador.</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── PAINEL CLIENTES ───────────────────────────────────────────────────────
+function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
+  const [modalNovo, setModalNovo] = useState(false);
+  const [form, setForm] = useState({ nome: "", cnpj: "", responsavel_id: "" });
+  const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState("");
+  const [msg, setMsg] = useState("");
+  const [busca, setBusca] = useState("");
+
+  async function criarCliente() {
+    if (!form.nome.trim()) { setErro("Informe o nome do cliente."); return; }
+    setLoading(true); setErro("");
+    const { error } = await supabase.from("clientes").insert({ nome: form.nome.trim(), cnpj: form.cnpj.trim(), responsavel_id: form.responsavel_id || null });
+    if (error) { setErro("Erro ao criar cliente."); setLoading(false); return; }
+    setMsg(`Cliente "${form.nome}" criado!`);
+    setForm({ nome: "", cnpj: "", responsavel_id: "" });
+    setModalNovo(false);
+    onAtualizar();
+    setLoading(false);
+  }
+
+  async function excluirCliente(id, nome) {
+    if (!window.confirm(`Remover "${nome}"?`)) return;
+    await supabase.from("clientes").delete().eq("id", id);
+    onAtualizar();
+  }
+
+  const filtrados = clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase()));
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
+      <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 620, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#1a56db" }}>Gerenciar Clientes</div>
+          <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>
+        </div>
+        {msg && <div style={{ background: "#dcfce7", border: "1px solid #22c55e", borderRadius: 8, padding: "10px 14px", color: "#15803d", fontSize: 13, marginBottom: 16 }}>{msg}</div>}
+
+        <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar cliente..." style={{ ...INPUT, marginBottom: 16 }} />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20, maxHeight: 320, overflowY: "auto" }}>
+          {filtrados.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Nenhum cliente cadastrado.</div>}
+          {filtrados.map(c => {
+            const resp = profiles.find(p => p.id === c.responsavel_id);
+            return (
+              <div key={c.id} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{c.nome}</div>
+                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                    {c.cnpj && <span>CNPJ: {c.cnpj}</span>}
+                    {resp && <span style={{ marginLeft: c.cnpj ? 12 : 0 }}>Responsável: {resp.nome}</span>}
+                  </div>
+                </div>
+                <button onClick={() => excluirCliente(c.id, c.nome)} style={{ background: "#fee2e2", border: "none", borderRadius: 8, color: "#dc2626", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Remover</button>
+              </div>
+            );
+          })}
+        </div>
+
+        <button onClick={() => { setModalNovo(true); setErro(""); setMsg(""); }} style={{ ...BTN_PRIMARY }}>+ Adicionar Novo Cliente</button>
+
+        {modalNovo && (
+          <div style={{ marginTop: 24, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20 }}>
+            <div style={{ fontWeight: 700, color: "#1a56db", marginBottom: 16, fontSize: 15 }}>Novo Cliente</div>
+            {erro && <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 8, padding: "8px 12px", color: "#dc2626", fontSize: 13, marginBottom: 12 }}>{erro}</div>}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div><label style={LABEL}>Nome *</label><input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Nome do cliente ou empresa" style={INPUT} /></div>
+              <div><label style={LABEL}>CNPJ</label><input value={form.cnpj} onChange={e => setForm(f => ({ ...f, cnpj: e.target.value }))} placeholder="00.000.000/0001-00" style={INPUT} /></div>
+              <div><label style={LABEL}>Responsável padrão</label><select value={form.responsavel_id} onChange={e => setForm(f => ({ ...f, responsavel_id: e.target.value }))} style={INPUT}><option value="">Selecione...</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
+              <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+                <button onClick={() => setModalNovo(false)} style={{ flex: 1, background: "white", border: "1px solid #e2e8f0", borderRadius: 9, color: "#64748b", padding: "10px", fontSize: 14, cursor: "pointer" }}>Cancelar</button>
+                <button onClick={criarCliente} disabled={loading} style={{ ...BTN_PRIMARY, flex: 2, width: "auto", opacity: loading ? 0.7 : 1 }}>{loading ? "Salvando..." : "Criar Cliente"}</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -170,12 +251,119 @@ function PainelUsuarios({ profiles, onAtualizar, onFechar }) {
   );
 }
 
+// ─── MODAL REPLICAR ────────────────────────────────────────────────────────
+function ModalReplicar({ tarefa, clientes, profiles, onFechar, onConcluir }) {
+  const [selecionados, setSelecionados] = useState([]);
+  const [responsavelPadrao, setResponsavelPadrao] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [busca, setBusca] = useState("");
+
+  const clientesFiltrados = clientes.filter(c =>
+    c.nome.toLowerCase().includes(busca.toLowerCase()) && c.nome !== tarefa.cliente
+  );
+
+  function toggleCliente(id) {
+    setSelecionados(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+  }
+
+  function selecionarTodos() {
+    setSelecionados(clientesFiltrados.map(c => c.id));
+  }
+
+  async function replicar() {
+    if (selecionados.length === 0) return;
+    setLoading(true);
+    const novas = selecionados.map(clienteId => {
+      const cliente = clientes.find(c => c.id === clienteId);
+      const respId = responsavelPadrao || cliente.responsavel_id || tarefa.responsavel_id;
+      const respNome = profiles.find(p => p.id === respId)?.nome || tarefa.responsavel_nome;
+      return {
+        cliente: cliente.nome,
+        tipo: tarefa.tipo,
+        prazo_interno: tarefa.prazo_interno,
+        prazo_legal: tarefa.prazo_legal,
+        prazo: tarefa.prazo_interno,
+        responsavel_id: respId,
+        responsavel_nome: respNome,
+        status: "A Fazer",
+        obs: tarefa.obs,
+        recorrente: tarefa.recorrente,
+        criado_por: tarefa.criado_por,
+      };
+    });
+    await supabase.from("tarefas").insert(novas);
+    setLoading(false);
+    onConcluir(novas.length);
+  }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 20 }}>
+      <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.15)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#1a56db" }}>Replicar Tarefa</div>
+          <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>
+        </div>
+        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
+          Replicando: <strong style={{ color: "#1e293b" }}>{tarefa.tipo}</strong> com os mesmos prazos para os clientes selecionados.
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={LABEL}>Responsável para todas (opcional)</label>
+          <select value={responsavelPadrao} onChange={e => setResponsavelPadrao(e.target.value)} style={INPUT}>
+            <option value="">Usar responsável padrão de cada cliente</option>
+            {profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+          </select>
+        </div>
+
+        <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+          <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar cliente..." style={{ ...INPUT, flex: 1 }} />
+          <button onClick={selecionarTodos} style={{ background: "#dbeafe", border: "none", borderRadius: 8, color: "#1d4ed8", padding: "10px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
+            Selecionar todos
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 280, overflowY: "auto", marginBottom: 20 }}>
+          {clientesFiltrados.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Nenhum outro cliente cadastrado.</div>}
+          {clientesFiltrados.map(c => {
+            const selecionado = selecionados.includes(c.id);
+            const resp = profiles.find(p => p.id === c.responsavel_id);
+            return (
+              <div key={c.id} onClick={() => toggleCliente(c.id)}
+                style={{ background: selecionado ? "#dbeafe" : "#f8fafc", border: `1px solid ${selecionado ? "#3b82f6" : "#e2e8f0"}`, borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", transition: "all .15s" }}>
+                <div style={{ width: 20, height: 20, borderRadius: 5, border: `2px solid ${selecionado ? "#1d4ed8" : "#cbd5e1"}`, background: selecionado ? "#1d4ed8" : "white", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {selecionado && <span style={{ color: "white", fontSize: 13, fontWeight: 700 }}>✓</span>}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{c.nome}</div>
+                  {resp && <div style={{ fontSize: 12, color: "#64748b" }}>Responsável: {resp.nome}</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ display: "flex", gap: 12, justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: 13, color: "#64748b" }}>{selecionados.length} cliente(s) selecionado(s)</div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={onFechar} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 9, color: "#64748b", padding: "10px 20px", fontSize: 14, cursor: "pointer" }}>Cancelar</button>
+            <button onClick={replicar} disabled={loading || selecionados.length === 0}
+              style={{ ...BTN_PRIMARY, width: "auto", opacity: loading || selecionados.length === 0 ? 0.5 : 1 }}>
+              {loading ? "Replicando..." : `Replicar para ${selecionados.length} cliente(s)`}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── APP PRINCIPAL ──────────────────────────────────────────────────────────
 export default function App() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [tarefas, setTarefas] = useState([]);
   const [profiles, setProfiles] = useState([]);
+  const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const [filtroTipo, setFiltroTipo] = useState("Todos");
@@ -184,10 +372,14 @@ export default function App() {
   const [editando, setEditando] = useState(null);
   const [detalhes, setDetalhes] = useState(null);
   const [painelUsuarios, setPainelUsuarios] = useState(false);
+  const [painelClientes, setPainelClientes] = useState(false);
+  const [modalReplicar, setModalReplicar] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   const [gerandoRecorrentes, setGerandoRecorrentes] = useState(false);
   const [msgRecorrente, setMsgRecorrente] = useState("");
-  const formInicial = { cliente: "", tipo: "IRPF", prazo_interno: today(), prazo_legal: today(), responsavel_id: "", status: "A Fazer", obs: "", recorrente: false };
+  const [msgReplicar, setMsgReplicar] = useState("");
+
+  const formInicial = { cliente_id: "", tipo: "IRPF", prazo_interno: today(), prazo_legal: today(), responsavel_id: "", status: "A Fazer", obs: "", recorrente: false };
   const [form, setForm] = useState(formInicial);
 
   useEffect(() => {
@@ -202,7 +394,7 @@ export default function App() {
 
   useEffect(() => {
     if (!user || !profile) return;
-    carregarTarefas(); carregarProfiles();
+    carregarTarefas(); carregarProfiles(); carregarClientes();
   }, [user, profile]);
 
   async function carregarTarefas() {
@@ -217,6 +409,11 @@ export default function App() {
     setProfiles(data || []);
   }
 
+  async function carregarClientes() {
+    const { data } = await supabase.from("clientes").select("*").order("nome");
+    setClientes(data || []);
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut();
     setUser(null); setProfile(null); setTarefas([]);
@@ -229,16 +426,18 @@ export default function App() {
   }
 
   function abrirEditar(t) {
+    const clienteObj = clientes.find(c => c.nome === t.cliente);
     setEditando(t.id);
-    setForm({ cliente: t.cliente, tipo: t.tipo, prazo_interno: t.prazo_interno || today(), prazo_legal: t.prazo_legal || today(), responsavel_id: t.responsavel_id, status: t.status, obs: t.obs || "", recorrente: t.recorrente || false });
+    setForm({ cliente_id: clienteObj?.id || "", tipo: t.tipo, prazo_interno: t.prazo_interno || today(), prazo_legal: t.prazo_legal || today(), responsavel_id: t.responsavel_id, status: t.status, obs: t.obs || "", recorrente: t.recorrente || false });
     setModal(true); setDetalhes(null);
   }
 
   async function salvar() {
-    if (!form.cliente.trim()) return;
+    if (!form.cliente_id) return;
     setFormLoading(true);
+    const clienteObj = clientes.find(c => c.id === parseInt(form.cliente_id));
     const respNome = profiles.find(p => p.id === form.responsavel_id)?.nome || "";
-    const payload = { cliente: form.cliente, tipo: form.tipo, prazo_interno: form.prazo_interno, prazo_legal: form.prazo_legal, prazo: form.prazo_interno, responsavel_id: form.responsavel_id, responsavel_nome: respNome, status: form.status, obs: form.obs, recorrente: form.recorrente, criado_por: user.id };
+    const payload = { cliente: clienteObj?.nome || "", tipo: form.tipo, prazo_interno: form.prazo_interno, prazo_legal: form.prazo_legal, prazo: form.prazo_interno, responsavel_id: form.responsavel_id, responsavel_nome: respNome, status: form.status, obs: form.obs, recorrente: form.recorrente, criado_por: user.id };
     if (editando) { await supabase.from("tarefas").update(payload).eq("id", editando); }
     else { await supabase.from("tarefas").insert(payload); }
     await carregarTarefas();
@@ -316,10 +515,25 @@ export default function App() {
       <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=Lato:wght@400;600;700&display=swap" rel="stylesheet" />
 
       {painelUsuarios && <PainelUsuarios profiles={profiles} onAtualizar={carregarProfiles} onFechar={() => setPainelUsuarios(false)} />}
+      {painelClientes && <PainelClientes clientes={clientes} profiles={profiles} onAtualizar={carregarClientes} onFechar={() => setPainelClientes(false)} />}
+      {modalReplicar && (
+        <ModalReplicar
+          tarefa={modalReplicar}
+          clientes={clientes}
+          profiles={profiles}
+          onFechar={() => setModalReplicar(null)}
+          onConcluir={async (n) => {
+            setModalReplicar(null);
+            await carregarTarefas();
+            setMsgReplicar(`${n} tarefa(s) replicada(s) com sucesso!`);
+            setTimeout(() => setMsgReplicar(""), 4000);
+          }}
+        />
+      )}
 
       {/* HEADER */}
       <div style={{ background: "#1a56db", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-        <Logo size={20} dark={false} />
+        <Logo size={20} dark={true} />
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: "white" }}>{profile.nome}</div>
@@ -327,6 +541,7 @@ export default function App() {
           </div>
           {isAdmin && (
             <>
+              <button onClick={() => setPainelClientes(true)} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Clientes</button>
               <button onClick={() => setPainelUsuarios(true)} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Usuários</button>
               <button onClick={gerarProximoMes} disabled={gerandoRecorrentes} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, opacity: gerandoRecorrentes ? 0.7 : 1 }}>Gerar Próximo Mês</button>
               <button onClick={abrirNova} style={{ background: "white", border: "none", borderRadius: 8, color: "#1a56db", padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Nova Tarefa</button>
@@ -337,9 +552,8 @@ export default function App() {
       </div>
 
       <div style={{ padding: "24px 24px" }}>
-        {msgRecorrente && (
-          <div style={{ background: "#dcfce7", border: "1px solid #22c55e", borderRadius: 10, padding: "12px 20px", color: "#15803d", fontSize: 14, marginBottom: 20 }}>{msgRecorrente}</div>
-        )}
+        {msgRecorrente && <div style={{ background: "#dcfce7", border: "1px solid #22c55e", borderRadius: 10, padding: "12px 20px", color: "#15803d", fontSize: 14, marginBottom: 16 }}>{msgRecorrente}</div>}
+        {msgReplicar && <div style={{ background: "#dbeafe", border: "1px solid #3b82f6", borderRadius: 10, padding: "12px 20px", color: "#1d4ed8", fontSize: 14, marginBottom: 16 }}>{msgReplicar}</div>}
 
         {/* STATS */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
@@ -406,8 +620,9 @@ export default function App() {
                     </td>
                     <td style={{ padding: "12px 14px" }}>
                       <div style={{ display: "flex", gap: 6 }}>
-                        <button onClick={() => setDetalhes(t)} style={{ background: "#dbeafe", border: "none", borderRadius: 7, color: "#1d4ed8", padding: "5px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Ver</button>
-                        {(isAdmin || t.responsavel_id === user.id) && <button onClick={() => abrirEditar(t)} style={{ background: "#dcfce7", border: "none", borderRadius: 7, color: "#15803d", padding: "5px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Editar</button>}
+                        <button onClick={() => setDetalhes(t)} style={{ background: "#dbeafe", border: "none", borderRadius: 7, color: "#1d4ed8", padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Ver</button>
+                        {(isAdmin || t.responsavel_id === user.id) && <button onClick={() => abrirEditar(t)} style={{ background: "#dcfce7", border: "none", borderRadius: 7, color: "#15803d", padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Editar</button>}
+                        {isAdmin && <button onClick={() => setModalReplicar(t)} style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 7, color: "#0284c7", padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Replicar</button>}
                       </div>
                     </td>
                   </tr>
@@ -424,8 +639,22 @@ export default function App() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}>
           <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
             <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#1a56db", marginBottom: 24 }}>{editando ? "Editar Tarefa" : "Nova Tarefa"}</div>
+            {clientes.length === 0 && (
+              <div style={{ background: "#fef9c3", border: "1px solid #eab308", borderRadius: 8, padding: "10px 14px", color: "#854d0e", fontSize: 13, marginBottom: 16 }}>
+                Nenhum cliente cadastrado. Cadastre clientes antes de criar tarefas.
+              </div>
+            )}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <div style={{ gridColumn: "1/-1" }}><label style={LABEL}>Cliente *</label><input value={form.cliente} onChange={e => setForm(f => ({ ...f, cliente: e.target.value }))} placeholder="Nome do cliente ou empresa" style={INPUT} /></div>
+              <div style={{ gridColumn: "1/-1" }}>
+                <label style={LABEL}>Cliente *</label>
+                <select value={form.cliente_id} onChange={e => {
+                  const c = clientes.find(c => c.id === parseInt(e.target.value));
+                  setForm(f => ({ ...f, cliente_id: e.target.value, responsavel_id: c?.responsavel_id || f.responsavel_id }));
+                }} style={INPUT}>
+                  <option value="">Selecione o cliente...</option>
+                  {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                </select>
+              </div>
               <div><label style={LABEL}>Tipo de Obrigação</label><select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))} style={INPUT}>{TIPOS.map(t => <option key={t}>{t}</option>)}</select></div>
               <div><label style={LABEL}>Responsável</label><select value={form.responsavel_id} onChange={e => setForm(f => ({ ...f, responsavel_id: e.target.value }))} style={INPUT}><option value="">Selecione...</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
               <div><label style={LABEL}>Prazo Interno</label><input type="date" value={form.prazo_interno} onChange={e => setForm(f => ({ ...f, prazo_interno: e.target.value }))} style={INPUT} /><div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Prazo do escritório</div></div>
@@ -436,13 +665,13 @@ export default function App() {
                 <input type="checkbox" id="recorrente" checked={form.recorrente} onChange={e => setForm(f => ({ ...f, recorrente: e.target.checked }))} style={{ width: 18, height: 18, cursor: "pointer" }} />
                 <div>
                   <label htmlFor="recorrente" style={{ color: "#1e293b", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>Tarefa Recorrente</label>
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>Gerada automaticamente todo mês ao clicar em "Gerar Próximo Mês"</div>
+                  <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>Gerada automaticamente todo mês</div>
                 </div>
               </div>
             </div>
             <div style={{ display: "flex", gap: 12, marginTop: 24, justifyContent: "flex-end" }}>
               <button onClick={() => setModal(false)} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 9, color: "#64748b", padding: "10px 22px", fontSize: 14, cursor: "pointer" }}>Cancelar</button>
-              <button onClick={salvar} disabled={formLoading} style={{ ...BTN_PRIMARY, width: "auto", opacity: formLoading ? 0.7 : 1 }}>{formLoading ? "Salvando..." : editando ? "Salvar Alterações" : "Criar Tarefa"}</button>
+              <button onClick={salvar} disabled={formLoading || !form.cliente_id} style={{ ...BTN_PRIMARY, width: "auto", opacity: formLoading || !form.cliente_id ? 0.5 : 1 }}>{formLoading ? "Salvando..." : editando ? "Salvar Alterações" : "Criar Tarefa"}</button>
             </div>
           </div>
         </div>
@@ -497,6 +726,7 @@ export default function App() {
               {podeEditar && (
                 <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
                   <button onClick={() => abrirEditar(t)} style={{ flex: 1, background: "#dcfce7", border: "none", borderRadius: 9, color: "#15803d", padding: "10px", fontSize: 14, cursor: "pointer", fontWeight: 600 }}>Editar</button>
+                  {isAdmin && <button onClick={() => { setDetalhes(null); setModalReplicar(t); }} style={{ flex: 1, background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 9, color: "#0284c7", padding: "10px", fontSize: 14, cursor: "pointer", fontWeight: 600 }}>Replicar</button>}
                   {isAdmin && <button onClick={() => excluir(t.id)} style={{ background: "#fee2e2", border: "none", borderRadius: 9, color: "#dc2626", padding: "10px 18px", fontSize: 14, cursor: "pointer", fontWeight: 600 }}>Excluir</button>}
                 </div>
               )}
