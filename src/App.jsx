@@ -44,7 +44,7 @@ const inputStyle = {
   outline: "none", fontFamily: "'Lato', sans-serif", boxSizing: "border-box",
 };
 const labelStyle = {
-  fontSize: 12, color: "#64748b", fontWeight: 600, letterSpacing: 1,
+  fontSize: 12, color: "#475569", fontWeight: 600, letterSpacing: 1,
   textTransform: "uppercase", marginBottom: 6, display: "block",
 };
 const btnPrimary = {
@@ -58,7 +58,7 @@ function Logo({ size = 24 }) {
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <div style={{ width: size + 8, height: size + 8, background: "linear-gradient(135deg, #0ea5e9, #0284c7)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.7 }}>✓</div>
       <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: size, fontWeight: 800, color: "#e2e8f0", letterSpacing: -0.5 }}>
-        <span style={{ color: "#1a56db" }}>True</span><span style={{ color: "#0ea5e9" }}>Tasks</span>
+        <span style={{ color: "white" }}>True</span><span style={{ color: "#93c5fd" }}>Tasks</span>
       </span>
     </div>
   );
@@ -344,8 +344,8 @@ function exportarExcel() {
           </div>
           {isAdmin && (
             <>
-              <button onClick={() => setPainelUsuarios(true)} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 9, color: "white", padding: "9px 16px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>👥 Usuários</button>
-              <button onClick={gerarProximoMes} disabled={gerandoRecorrentes} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 9, color: "white", padding: "9px 16px", fontSize: 13, cursor: "pointer", fontWeight: 600, opacity: gerandoRecorrentes ? 0.7 : 1 }}>🔄 Gerar Próximo Mês</button>
+              <button onClick={() => setPainelUsuarios(true)} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 9, color: "white", padding: "9px 16px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Usuários</button>
+              <button onClick={gerarProximoMes} disabled={gerandoRecorrentes} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 9, color: "white", padding: "9px 16px", fontSize: 13, cursor: "pointer", fontWeight: 600, opacity: gerandoRecorrentes ? 0.7 : 1 }}>Gerar Próximo Mês</button>
               <button onClick={abrirNova} style={{ background: "white", border: "none", borderRadius: 9, color: "#1a56db", padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Nova Tarefa</button>
             </>
           )}
@@ -415,7 +415,7 @@ function exportarExcel() {
                   <tr key={t.id} style={{ borderBottom: "1px solid #111f30", background: i % 2 === 0 ? "transparent" : "#0a1220" }}
                     onMouseEnter={e => e.currentTarget.style.background = "#0f1f33"}
                     onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? "transparent" : "#0a1220"}>
-                    <td style={{ padding: "12px", fontWeight: 600, fontSize: 13, color: "#1e293b" }}>{t.cliente}</td>
+                    <td style={{ padding: "12px", fontWeight: 600, fontSize: 13, color: "#334155" }}>{t.cliente}</td>
                     <td style={{ padding: "12px" }}><span style={{ background: "#dbeafe", border: "none", borderRadius: 6, padding: "2px 8px", fontSize: 11, color: "#1d4ed8", fontWeight: 600 }}>{t.tipo}</span></td>
                     <td style={{ padding: "12px", fontSize: 12, color: internoAtrasado ? "#f87171" : "#94a3b8", fontWeight: internoAtrasado ? 700 : 400 }}>{formatDate(t.prazo_interno)}</td>
                     <td style={{ padding: "12px", fontSize: 12, color: legalAtrasado ? "#f87171" : "#64748b", fontWeight: legalAtrasado ? 700 : 400 }}>{formatDate(t.prazo_legal)}</td>
