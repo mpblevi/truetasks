@@ -605,20 +605,6 @@ export default function App() {
           ))}
         </div>
 
-        {/* STATS */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
-          {Object.entries(stats).map(([s, n]) => {
-            const st = STATUS_STYLE[s];
-            return (
-              <div key={s} onClick={() => setFiltroStatus(filtroStatus === s ? "Todos" : s)}
-                style={{ background: "white", border: `1px solid ${st.border}`, borderTop: `3px solid ${st.border}`, borderRadius: 10, padding: "16px 20px", cursor: "pointer", transition: "all .2s", opacity: filtroStatus === "Todos" || filtroStatus === s ? 1 : 0.5 }}>
-                <div style={{ fontSize: 28, fontWeight: 800, color: st.border, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{n}</div>
-                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4, fontWeight: 600 }}>{s.toUpperCase()}</div>
-              </div>
-            );
-          })}
-        </div>
-
         {/* FILTROS */}
         <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
           <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar cliente, CNPJ ou tipo..." style={{ ...INPUT, maxWidth: 240, flex: 1 }} />
@@ -648,7 +634,7 @@ export default function App() {
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1100 }}>
             <thead>
               <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                {["Cliente", "CNPJ", "Competência", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Revisor", "Participantes", "Status", "Situação", "Ações"].map(h => (
+                {["Cliente", "CNPJ", "Competência", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Revisor", "Participantes", "Status", "Ações"].map(h => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: 11, color: "#64748b", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
@@ -680,15 +666,14 @@ export default function App() {
                     <td style={{ padding: "12px 14px", fontSize: 12, color: "#94a3b8", maxWidth: 150 }}>
                       {t.participantes ? <span title={t.participantes} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.participantes}</span> : "—"}
                     </td>
-                    <td style={{ padding: "12px 14px" }}>
-                      <span style={{ background: st.bg, border: `1px solid ${st.border}`, borderRadius: 20, padding: "3px 12px", fontSize: 12, color: st.text, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
-                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: st.dot, flexShrink: 0 }} />{t.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: "12px 14px" }}>
+                   <td style={{ padding: "12px 14px" }}>
                       {sit ? (
                         <span style={{ background: sit.bg, border: `1px solid ${sit.border}`, borderRadius: 20, padding: "3px 12px", fontSize: 12, color: sit.color, fontWeight: 600, whiteSpace: "nowrap" }}>{sit.label}</span>
-                      ) : <span style={{ color: "#94a3b8", fontSize: 12 }}>—</span>}
+                      ) : (
+                        <span style={{ background: st.bg, border: `1px solid ${st.border}`, borderRadius: 20, padding: "3px 12px", fontSize: 12, color: st.text, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: st.dot, flexShrink: 0 }} />{t.status}
+                        </span>
+                      )}
                     </td>
                     <td style={{ padding: "12px 14px" }}>
                       <div style={{ display: "flex", gap: 6 }}>
