@@ -10,15 +10,13 @@ const DOMAIN = "@truetasks.app";
 const TIPOS = ["DCTFWEB", "ECF", "ECD", "EFD CONTRIBUIÇÕES", "EFD FISCAL", "EFD REINF", "ESOCIAL", "FOLHA", "IRPF", "PGDAS"];
 const STATUS_LIST = ["A Fazer", "Em Andamento", "Revisão", "Concluído", "Atrasado"];
 
-// Gerar lista de competências (últimos 12 meses + próximos 3)
 function gerarCompetencias() {
   const lista = [];
   const hoje = new Date();
   for (let i = -12; i <= 3; i++) {
     const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
     const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const yyyy = d.getFullYear();
-    lista.push(`${mm}/${yyyy}`);
+    lista.push(`${mm}/${d.getFullYear()}`);
   }
   return lista.reverse();
 }
@@ -36,6 +34,19 @@ const STATUS_STYLE = {
   "Concluído":    { bg: "#dcfce7", border: "#16a34a", text: "#14532d", dot: "#16a34a" },
   "Atrasado":     { bg: "#fee2e2", border: "#ef4444", text: "#dc2626", dot: "#ef4444" },
 };
+
+// ─── SITUAÇÃO VISUAL ────────────────────────────────────────────────────────
+function calcSituacao(prazo_interno, prazo_legal, status) {
+  if (status === "Concluído") return null;
+  const ref = prazo_legal || prazo_interno;
+  if (!ref) return null;
+  const hoje = new Date().toISOString().split("T")[0];
+  const diffDias = Math.ceil((new Date(ref) - new Date(hoje)) / (1000 * 60 * 60 * 24));
+  if (diffDias < 0) return { label: "Vencido", bg: "#fee2e2", color: "#dc2626", border: "#fca5a5" };
+  if (diffDias === 0) return { label: "Vencendo Hoje", bg: "#fff7ed", color: "#ea580c", border: "#fed7aa" };
+  if (diffDias <= 7) return { label: "A Vencer", bg: "#fef9c3", color: "#854d0e", border: "#fde047" };
+  return { label: "Em Dia", bg: "#dcfce7", color: "#15803d", border: "#86efac" };
+}
 
 function today() { return new Date().toISOString().split("T")[0]; }
 function toEmail(u) { return u.toLowerCase().trim() + DOMAIN; }
@@ -137,9 +148,7 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
     if (error) { setErro("Erro ao criar cliente."); setLoading(false); return; }
     setMsg(`Cliente "${form.nome}" criado!`);
     setForm({ nome: "", cnpj: "", responsavel_id: "" });
-    setModalNovo(false);
-    onAtualizar();
-    setLoading(false);
+    setModalNovo(false); onAtualizar(); setLoading(false);
   }
 
   async function excluirCliente(id, nome) {
@@ -216,8 +225,7 @@ function PainelUsuarios({ profiles, onAtualizar, onFechar }) {
       await supabase.from("profiles").insert({ id: data.user.id, nome: form.nome, cargo: form.cargo, usuario: form.usuario });
       setMsg(`Usuário "${form.usuario}" criado!`);
       setForm({ nome: "", usuario: "", senha: "", cargo: "colaborador" });
-      setModalNovo(false);
-      onAtualizar();
+      setModalNovo(false); onAtualizar();
     }
     setLoading(false);
   }
@@ -257,7 +265,7 @@ function PainelUsuarios({ profiles, onAtualizar, onFechar }) {
             {erro && <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 8, padding: "8px 12px", color: "#dc2626", fontSize: 13, marginBottom: 12 }}>{erro}</div>}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div><label style={LABEL}>Nome completo</label><input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Ex: Ana Lima" style={INPUT} /></div>
-              <div><label style={LABEL}>Usuário (para login)</label><input value={form.usuario} onChange={e => setForm(f => ({ ...f, usuario: e.target.value.replace(/\s/g, "") }))} placeholder="Ex: 001 ou ana" style={INPUT} /><div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Sem espaços. Ex: 001, ana, carlos</div></div>
+              <div><label style={LABEL}>Usuário (para login)</label><input value={form.usuario} onChange={e => setForm(f => ({ ...f, usuario: e.target.value.replace(/\s/g, "") }))} placeholder="Ex: 001 ou ana" style={INPUT} /></div>
               <div><label style={LABEL}>Senha inicial</label><input type="password" value={form.senha} onChange={e => setForm(f => ({ ...f, senha: e.target.value }))} placeholder="Mínimo 6 caracteres" style={INPUT} /></div>
               <div><label style={LABEL}>Cargo</label><select value={form.cargo} onChange={e => setForm(f => ({ ...f, cargo: e.target.value }))} style={INPUT}><option value="colaborador">Colaborador</option><option value="admin">Administrador</option></select></div>
               <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
@@ -279,13 +287,9 @@ function ModalReplicar({ tarefa, clientes, profiles, onFechar, onConcluir }) {
   const [loading, setLoading] = useState(false);
   const [busca, setBusca] = useState("");
 
-  const clientesFiltrados = clientes.filter(c =>
-    c.nome.toLowerCase().includes(busca.toLowerCase()) && c.nome !== tarefa.cliente
-  );
+  const clientesFiltrados = clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase()) && c.nome !== tarefa.cliente);
 
-  function toggleCliente(id) {
-    setSelecionados(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
-  }
+  function toggleCliente(id) { setSelecionados(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]); }
 
   async function replicar() {
     if (selecionados.length === 0) return;
@@ -299,6 +303,8 @@ function ModalReplicar({ tarefa, clientes, profiles, onFechar, onConcluir }) {
         tipo: tarefa.tipo, competencia: tarefa.competencia,
         prazo_interno: tarefa.prazo_interno, prazo_legal: tarefa.prazo_legal,
         prazo: tarefa.prazo_interno, responsavel_id: respId, responsavel_nome: respNome,
+        revisor_id: tarefa.revisor_id, revisor_nome: tarefa.revisor_nome,
+        participantes: tarefa.participantes,
         status: "A Fazer", obs: tarefa.obs, recorrente: tarefa.recorrente, criado_por: tarefa.criado_por,
       };
     });
@@ -334,8 +340,7 @@ function ModalReplicar({ tarefa, clientes, profiles, onFechar, onConcluir }) {
             const sel = selecionados.includes(c.id);
             const resp = profiles.find(p => p.id === c.responsavel_id);
             return (
-              <div key={c.id} onClick={() => toggleCliente(c.id)}
-                style={{ background: sel ? "#dbeafe" : "#f8fafc", border: `1px solid ${sel ? "#3b82f6" : "#e2e8f0"}`, borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+              <div key={c.id} onClick={() => toggleCliente(c.id)} style={{ background: sel ? "#dbeafe" : "#f8fafc", border: `1px solid ${sel ? "#3b82f6" : "#e2e8f0"}`, borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
                 <div style={{ width: 20, height: 20, borderRadius: 5, border: `2px solid ${sel ? "#1d4ed8" : "#cbd5e1"}`, background: sel ? "#1d4ed8" : "white", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   {sel && <span style={{ color: "white", fontSize: 13, fontWeight: 700 }}>✓</span>}
                 </div>
@@ -375,6 +380,7 @@ export default function App() {
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const [filtroTipo, setFiltroTipo] = useState("Todos");
   const [filtroComp, setFiltroComp] = useState("Todos");
+  const [filtroSituacao, setFiltroSituacao] = useState("Todos");
   const [busca, setBusca] = useState("");
   const [esconderConcluidos, setEsconderConcluidos] = useState(false);
   const [modal, setModal] = useState(false);
@@ -388,7 +394,7 @@ export default function App() {
   const [msgRecorrente, setMsgRecorrente] = useState("");
   const [msgReplicar, setMsgReplicar] = useState("");
 
-  const formInicial = { cliente_id: "", tipo: "IRPF", competencia: competenciaAtual(), prazo_interno: today(), prazo_legal: today(), responsavel_id: "", status: "A Fazer", obs: "", recorrente: false };
+  const formInicial = { cliente_id: "", tipo: "IRPF", competencia: competenciaAtual(), prazo_interno: today(), prazo_legal: today(), responsavel_id: "", revisor_id: "", participantes: "", status: "A Fazer", obs: "", recorrente: false };
   const [form, setForm] = useState(formInicial);
 
   useEffect(() => {
@@ -412,17 +418,14 @@ export default function App() {
     const { data } = await q;
     setTarefas(data || []);
   }
-
   async function carregarProfiles() {
     const { data } = await supabase.from("profiles").select("*");
     setProfiles(data || []);
   }
-
   async function carregarClientes() {
     const { data } = await supabase.from("clientes").select("*").order("nome");
     setClientes(data || []);
   }
-
   async function handleLogout() {
     await supabase.auth.signOut();
     setUser(null); setProfile(null); setTarefas([]);
@@ -437,7 +440,7 @@ export default function App() {
   function abrirEditar(t) {
     const clienteObj = clientes.find(c => c.nome === t.cliente);
     setEditando(t.id);
-    setForm({ cliente_id: clienteObj?.id || "", tipo: t.tipo, competencia: t.competencia || competenciaAtual(), prazo_interno: t.prazo_interno || today(), prazo_legal: t.prazo_legal || today(), responsavel_id: t.responsavel_id, status: t.status, obs: t.obs || "", recorrente: t.recorrente || false });
+    setForm({ cliente_id: clienteObj?.id || "", tipo: t.tipo, competencia: t.competencia || competenciaAtual(), prazo_interno: t.prazo_interno || today(), prazo_legal: t.prazo_legal || today(), responsavel_id: t.responsavel_id, revisor_id: t.revisor_id || "", participantes: t.participantes || "", status: t.status, obs: t.obs || "", recorrente: t.recorrente || false });
     setModal(true); setDetalhes(null);
   }
 
@@ -446,13 +449,15 @@ export default function App() {
     setFormLoading(true);
     const clienteObj = clientes.find(c => c.id === parseInt(form.cliente_id));
     const respNome = profiles.find(p => p.id === form.responsavel_id)?.nome || "";
+    const revNome = profiles.find(p => p.id === form.revisor_id)?.nome || "";
     const payload = {
       cliente: clienteObj?.nome || "", cnpj_cliente: clienteObj?.cnpj || "",
       tipo: form.tipo, competencia: form.competencia,
-      prazo_interno: form.prazo_interno, prazo_legal: form.prazo_legal,
-      prazo: form.prazo_interno, responsavel_id: form.responsavel_id,
-      responsavel_nome: respNome, status: form.status,
-      obs: form.obs, recorrente: form.recorrente, criado_por: user.id
+      prazo_interno: form.prazo_interno, prazo_legal: form.prazo_legal, prazo: form.prazo_interno,
+      responsavel_id: form.responsavel_id, responsavel_nome: respNome,
+      revisor_id: form.revisor_id || null, revisor_nome: revNome,
+      participantes: form.participantes,
+      status: form.status, obs: form.obs, recorrente: form.recorrente, criado_por: user.id
     };
     if (editando) { await supabase.from("tarefas").update(payload).eq("id", editando); }
     else { await supabase.from("tarefas").insert(payload); }
@@ -477,10 +482,11 @@ export default function App() {
     const novas = recorrentes.map(t => ({
       cliente: t.cliente, cnpj_cliente: t.cnpj_cliente,
       tipo: t.tipo, competencia: addMonthsComp(t.competencia, 1),
-      prazo_interno: addMonths(t.prazo_interno, 1),
-      prazo_legal: addMonths(t.prazo_legal, 1),
+      prazo_interno: addMonths(t.prazo_interno, 1), prazo_legal: addMonths(t.prazo_legal, 1),
       prazo: addMonths(t.prazo_interno, 1),
       responsavel_id: t.responsavel_id, responsavel_nome: t.responsavel_nome,
+      revisor_id: t.revisor_id, revisor_nome: t.revisor_nome,
+      participantes: t.participantes,
       status: "A Fazer", obs: t.obs, recorrente: true, criado_por: t.criado_por,
     }));
     await supabase.from("tarefas").insert(novas);
@@ -490,11 +496,14 @@ export default function App() {
   }
 
   function exportarExcel() {
-    const headers = ["Cliente", "CNPJ", "Competência", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Status"];
-    const rows = filtradas.map(t => [t.cliente, t.cnpj_cliente || "", t.competencia || "", t.tipo, formatDate(t.prazo_interno), formatDate(t.prazo_legal), t.responsavel_nome, t.status]);
+    const headers = ["Cliente", "CNPJ", "Competência", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Revisor", "Participantes", "Status", "Situação"];
+    const rows = filtradas.map(t => {
+      const sit = calcSituacao(t.prazo_interno, t.prazo_legal, t.status);
+      return [t.cliente, t.cnpj_cliente || "", t.competencia || "", t.tipo, formatDate(t.prazo_interno), formatDate(t.prazo_legal), t.responsavel_nome, t.revisor_nome || "", t.participantes || "", t.status, sit?.label || ""];
+    });
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-    ws["!cols"] = [{ wch: 30 }, { wch: 20 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 }];
+    ws["!cols"] = [{ wch: 30 }, { wch: 20 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 15 }];
     XLSX.utils.book_append_sheet(wb, ws, "Tarefas");
     XLSX.writeFile(wb, "truetasks_relatorio.xlsx");
   }
@@ -509,14 +518,26 @@ export default function App() {
     const matchStatus = filtroStatus === "Todos" || t.status === filtroStatus;
     const matchTipo = filtroTipo === "Todos" || t.tipo === filtroTipo;
     const matchComp = filtroComp === "Todos" || t.competencia === filtroComp;
+    const sit = calcSituacao(t.prazo_interno, t.prazo_legal, t.status);
+    const matchSit = filtroSituacao === "Todos" || sit?.label === filtroSituacao;
     const matchBusca = t.cliente.toLowerCase().includes(busca.toLowerCase()) || (t.cnpj_cliente || "").includes(busca) || t.tipo.toLowerCase().includes(busca.toLowerCase());
     const matchConcluido = !esconderConcluidos || t.status !== "Concluído";
-    return matchStatus && matchTipo && matchComp && matchBusca && matchConcluido;
-  }), [tarefasComStatus, filtroStatus, filtroTipo, filtroComp, busca, esconderConcluidos]);
+    return matchStatus && matchTipo && matchComp && matchSit && matchBusca && matchConcluido;
+  }), [tarefasComStatus, filtroStatus, filtroTipo, filtroComp, filtroSituacao, busca, esconderConcluidos]);
 
   const stats = useMemo(() => {
     const s = { "A Fazer": 0, "Em Andamento": 0, "Concluído": 0, "Atrasado": 0 };
     tarefasComStatus.forEach(t => { if (s[t.status] !== undefined) s[t.status]++; });
+    return s;
+  }, [tarefasComStatus]);
+
+  // Contadores de situação para os badges do topo
+  const sitStats = useMemo(() => {
+    const s = { "Vencendo Hoje": 0, "A Vencer": 0, "Vencido": 0 };
+    tarefasComStatus.forEach(t => {
+      const sit = calcSituacao(t.prazo_interno, t.prazo_legal, t.status);
+      if (sit && s[sit.label] !== undefined) s[sit.label]++;
+    });
     return s;
   }, [tarefasComStatus]);
 
@@ -569,6 +590,21 @@ export default function App() {
         {msgRecorrente && <div style={{ background: "#dcfce7", border: "1px solid #22c55e", borderRadius: 10, padding: "12px 20px", color: "#15803d", fontSize: 14, marginBottom: 16 }}>{msgRecorrente}</div>}
         {msgReplicar && <div style={{ background: "#dbeafe", border: "1px solid #3b82f6", borderRadius: 10, padding: "12px 20px", color: "#1d4ed8", fontSize: 14, marginBottom: 16 }}>{msgReplicar}</div>}
 
+        {/* BADGES SITUAÇÃO */}
+        <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+          {[
+            { label: "Vencendo Hoje", bg: "#fff7ed", color: "#ea580c", border: "#fed7aa" },
+            { label: "A Vencer", bg: "#fef9c3", color: "#854d0e", border: "#fde047" },
+            { label: "Vencido", bg: "#fee2e2", color: "#dc2626", border: "#fca5a5" },
+          ].map(sit => (
+            <button key={sit.label} onClick={() => setFiltroSituacao(filtroSituacao === sit.label ? "Todos" : sit.label)}
+              style={{ background: filtroSituacao === sit.label ? sit.bg : "white", border: `1.5px solid ${filtroSituacao === sit.label ? sit.border : "#e2e8f0"}`, borderRadius: 20, padding: "6px 16px", fontSize: 13, color: filtroSituacao === sit.label ? sit.color : "#64748b", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ background: sit.bg, color: sit.color, border: `1px solid ${sit.border}`, borderRadius: 10, padding: "1px 8px", fontSize: 12, fontWeight: 700 }}>{sitStats[sit.label]}</span>
+              {sit.label}
+            </button>
+          ))}
+        </div>
+
         {/* STATS */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
           {Object.entries(stats).map(([s, n]) => {
@@ -585,7 +621,7 @@ export default function App() {
 
         {/* FILTROS */}
         <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
-          <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar cliente, CNPJ ou tipo..." style={{ ...INPUT, maxWidth: 260, flex: 1 }} />
+          <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar cliente, CNPJ ou tipo..." style={{ ...INPUT, maxWidth: 240, flex: 1 }} />
           <select value={filtroComp} onChange={e => setFiltroComp(e.target.value)} style={{ ...INPUT, width: "auto" }}>
             <option value="Todos">Todas as competências</option>
             {COMPETENCIAS.map(c => <option key={c}>{c}</option>)}
@@ -609,22 +645,23 @@ export default function App() {
 
         {/* TABELA */}
         <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1100 }}>
             <thead>
               <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                {["Cliente", "CNPJ", "Competência", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Status", "Ações"].map(h => (
+                {["Cliente", "CNPJ", "Competência", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Revisor", "Participantes", "Status", "Situação", "Ações"].map(h => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: 11, color: "#64748b", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtradas.length === 0 && (
-                <tr><td colSpan={9} style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>Nenhuma tarefa encontrada.</td></tr>
+                <tr><td colSpan={12} style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>Nenhuma tarefa encontrada.</td></tr>
               )}
               {filtradas.map((t, i) => {
                 const st = STATUS_STYLE[t.status];
                 const iAtrasado = t.prazo_interno && t.prazo_interno < today() && t.status !== "Concluído";
                 const lAtrasado = t.prazo_legal && t.prazo_legal < today() && t.status !== "Concluído";
+                const sit = calcSituacao(t.prazo_interno, t.prazo_legal, t.status);
                 return (
                   <tr key={t.id}
                     style={{ borderBottom: "1px solid #f1f5f9", background: i % 2 === 0 ? "white" : "#f8fafc" }}
@@ -639,10 +676,19 @@ export default function App() {
                     <td style={{ padding: "12px 14px", fontSize: 13, color: iAtrasado ? "#dc2626" : "#475569", fontWeight: iAtrasado ? 700 : 400 }}>{formatDate(t.prazo_interno)}</td>
                     <td style={{ padding: "12px 14px", fontSize: 13, color: lAtrasado ? "#dc2626" : "#94a3b8" }}>{formatDate(t.prazo_legal)}</td>
                     <td style={{ padding: "12px 14px", fontSize: 13, color: "#64748b" }}>{t.responsavel_nome}</td>
+                    <td style={{ padding: "12px 14px", fontSize: 13, color: "#64748b" }}>{t.revisor_nome || "—"}</td>
+                    <td style={{ padding: "12px 14px", fontSize: 12, color: "#94a3b8", maxWidth: 150 }}>
+                      {t.participantes ? <span title={t.participantes} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.participantes}</span> : "—"}
+                    </td>
                     <td style={{ padding: "12px 14px" }}>
                       <span style={{ background: st.bg, border: `1px solid ${st.border}`, borderRadius: 20, padding: "3px 12px", fontSize: 12, color: st.text, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: st.dot, flexShrink: 0 }} />{t.status}
                       </span>
+                    </td>
+                    <td style={{ padding: "12px 14px" }}>
+                      {sit ? (
+                        <span style={{ background: sit.bg, border: `1px solid ${sit.border}`, borderRadius: 20, padding: "3px 12px", fontSize: 12, color: sit.color, fontWeight: 600, whiteSpace: "nowrap" }}>{sit.label}</span>
+                      ) : <span style={{ color: "#94a3b8", fontSize: 12 }}>—</span>}
                     </td>
                     <td style={{ padding: "12px 14px" }}>
                       <div style={{ display: "flex", gap: 6 }}>
@@ -663,7 +709,7 @@ export default function App() {
       {/* MODAL NOVA/EDITAR */}
       {modal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}>
-          <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+          <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 600, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
             <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#1a56db", marginBottom: 24 }}>{editando ? "Editar Tarefa" : "Nova Tarefa"}</div>
             {clientes.length === 0 && (
               <div style={{ background: "#fef9c3", border: "1px solid #eab308", borderRadius: 8, padding: "10px 14px", color: "#854d0e", fontSize: 13, marginBottom: 16 }}>
@@ -681,34 +727,18 @@ export default function App() {
                   {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}{c.cnpj ? ` — ${c.cnpj}` : ""}</option>)}
                 </select>
               </div>
-              <div>
-                <label style={LABEL}>Tipo de Obrigação</label>
-                <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))} style={INPUT}>{TIPOS.map(t => <option key={t}>{t}</option>)}</select>
+              <div><label style={LABEL}>Tipo de Obrigação</label><select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))} style={INPUT}>{TIPOS.map(t => <option key={t}>{t}</option>)}</select></div>
+              <div><label style={LABEL}>Competência</label><select value={form.competencia} onChange={e => setForm(f => ({ ...f, competencia: e.target.value }))} style={INPUT}>{COMPETENCIAS.map(c => <option key={c}>{c}</option>)}</select></div>
+              <div><label style={LABEL}>Responsável</label><select value={form.responsavel_id} onChange={e => setForm(f => ({ ...f, responsavel_id: e.target.value }))} style={INPUT}><option value="">Selecione...</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
+              <div><label style={LABEL}>Revisor</label><select value={form.revisor_id} onChange={e => setForm(f => ({ ...f, revisor_id: e.target.value }))} style={INPUT}><option value="">Sem revisor</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
+              <div style={{ gridColumn: "1/-1" }}>
+                <label style={LABEL}>Participantes</label>
+                <input value={form.participantes} onChange={e => setForm(f => ({ ...f, participantes: e.target.value }))} placeholder="Ex: Ana Lima, Carlos Souza" style={INPUT} />
+                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Separe os nomes por vírgula</div>
               </div>
-              <div>
-                <label style={LABEL}>Competência</label>
-                <select value={form.competencia} onChange={e => setForm(f => ({ ...f, competencia: e.target.value }))} style={INPUT}>
-                  {COMPETENCIAS.map(c => <option key={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={LABEL}>Responsável</label>
-                <select value={form.responsavel_id} onChange={e => setForm(f => ({ ...f, responsavel_id: e.target.value }))} style={INPUT}><option value="">Selecione...</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select>
-              </div>
-              <div>
-                <label style={LABEL}>Status</label>
-                <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} style={INPUT}>{STATUS_LIST.filter(s => s !== "Atrasado").map(s => <option key={s}>{s}</option>)}</select>
-              </div>
-              <div>
-                <label style={LABEL}>Prazo Interno</label>
-                <input type="date" value={form.prazo_interno} onChange={e => setForm(f => ({ ...f, prazo_interno: e.target.value }))} style={INPUT} />
-                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Prazo do escritório</div>
-              </div>
-              <div>
-                <label style={LABEL}>Prazo Legal</label>
-                <input type="date" value={form.prazo_legal} onChange={e => setForm(f => ({ ...f, prazo_legal: e.target.value }))} style={INPUT} />
-                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Prazo oficial de entrega</div>
-              </div>
+              <div><label style={LABEL}>Prazo Interno</label><input type="date" value={form.prazo_interno} onChange={e => setForm(f => ({ ...f, prazo_interno: e.target.value }))} style={INPUT} /><div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Prazo do escritório</div></div>
+              <div><label style={LABEL}>Prazo Legal</label><input type="date" value={form.prazo_legal} onChange={e => setForm(f => ({ ...f, prazo_legal: e.target.value }))} style={INPUT} /><div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Prazo oficial de entrega</div></div>
+              <div><label style={LABEL}>Status</label><select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} style={INPUT}>{STATUS_LIST.filter(s => s !== "Atrasado").map(s => <option key={s}>{s}</option>)}</select></div>
               <div style={{ gridColumn: "1/-1" }}><label style={LABEL}>Observações</label><textarea value={form.obs} onChange={e => setForm(f => ({ ...f, obs: e.target.value }))} placeholder="Anotações adicionais..." style={{ ...INPUT, height: 70, resize: "vertical" }} /></div>
               <div style={{ gridColumn: "1/-1", display: "flex", alignItems: "center", gap: 12, background: "#f8fafc", borderRadius: 10, padding: "14px 16px", border: "1px solid #e2e8f0" }}>
                 <input type="checkbox" id="recorrente" checked={form.recorrente} onChange={e => setForm(f => ({ ...f, recorrente: e.target.checked }))} style={{ width: 18, height: 18, cursor: "pointer" }} />
@@ -730,27 +760,35 @@ export default function App() {
       {detalhes && (() => {
         const t = tarefasComStatus.find(x => x.id === detalhes.id) || detalhes;
         const st = STATUS_STYLE[t.status];
+        const sit = calcSituacao(t.prazo_interno, t.prazo_legal, t.status);
         const podeEditar = isAdmin || t.responsavel_id === user.id;
         return (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}>
-            <div style={{ background: "white", border: `2px solid ${st.border}`, borderRadius: 16, padding: 32, width: "100%", maxWidth: 500, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-                <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b" }}>{t.cliente}</div>
+            <div style={{ background: "white", border: `2px solid ${st.border}`, borderRadius: 16, padding: 32, width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <div>
+                  <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b" }}>{t.cliente}</div>
+                  {t.cnpj_cliente && <div style={{ fontSize: 12, color: "#64748b", fontFamily: "monospace", marginTop: 2 }}>{t.cnpj_cliente}</div>}
+                </div>
                 <button onClick={() => setDetalhes(null)} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>
               </div>
+              {sit && (
+                <div style={{ background: sit.bg, border: `1px solid ${sit.border}`, borderRadius: 8, padding: "8px 14px", color: sit.color, fontSize: 13, fontWeight: 600, marginBottom: 16, display: "inline-block" }}>{sit.label}</div>
+              )}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 {[
                   ["Tipo", t.tipo],
                   ["Competência", t.competencia || "—"],
-                  ["CNPJ", t.cnpj_cliente || "—"],
-                  ["Responsável", t.responsavel_nome],
                   ["Prazo Interno", <span style={{ color: t.prazo_interno < today() && t.status !== "Concluído" ? "#dc2626" : "#1e293b" }}>{formatDate(t.prazo_interno)}</span>],
                   ["Prazo Legal", <span style={{ color: t.prazo_legal < today() && t.status !== "Concluído" ? "#dc2626" : "#1e293b" }}>{formatDate(t.prazo_legal)}</span>],
+                  ["Responsável", t.responsavel_nome],
+                  ["Revisor", t.revisor_nome || "—"],
+                  ["Participantes", t.participantes || "—"],
                   ["Recorrente", t.recorrente ? "Sim" : "Não"],
                 ].map(([k, v]) => (
                   <div key={k} style={{ background: "#f8fafc", borderRadius: 10, padding: "12px 14px", border: "1px solid #e2e8f0" }}>
                     <div style={{ fontSize: 11, color: "#64748b", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>{k}</div>
-                    <div style={{ fontSize: 14, color: "#1e293b", fontWeight: 600 }}>{v}</div>
+                    <div style={{ fontSize: 13, color: "#1e293b", fontWeight: 600 }}>{v}</div>
                   </div>
                 ))}
               </div>
