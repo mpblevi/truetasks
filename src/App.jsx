@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs";
 
@@ -8,54 +8,71 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const DOMAIN = "@truetasks.app";
 const TIPOS = ["DCTFWEB", "ECF", "ECD", "EFD CONTRIBUIÇÕES", "EFD FISCAL", "EFD REINF", "ESOCIAL", "FOLHA", "IRPF", "PGDAS"];
-const STATUS_LIST = ["A Fazer", "Em Andamento", "Revisão", "Concluído", "Atrasado"];
+
+const STATUS_LIST = [
+  "Aguardando Cliente", "Em Elaboração", "Enviado por Email",
+  "Finalizado", "Pendente", "Revisão"
+];
+
+const SITUACAO_LIST = [
+  "No Prazo", "A Vencer", "Vencido Internamente", "Vencido Legalmente",
+  "Finalizado no Prazo", "Finalizado no Vencimento Legal", "Finalizado em Atraso"
+];
+
+const STATUS_STYLE = {
+  "Aguardando Cliente": { bg: "#fff7ed", border: "#f97316", text: "#c2410c" },
+  "Em Elaboração":      { bg: "#eff6ff", border: "#3b82f6", text: "#1d4ed8" },
+  "Enviado por Email":  { bg: "#f0fdf4", border: "#22c55e", text: "#15803d" },
+  "Finalizado":         { bg: "#dcfce7", border: "#16a34a", text: "#14532d" },
+  "Pendente":           { bg: "#fef9c3", border: "#eab308", text: "#854d0e" },
+  "Revisão":            { bg: "#fae8ff", border: "#a855f7", text: "#6b21a8" },
+};
+
+const SITUACAO_STYLE = {
+  "No Prazo":                    { bg: "#dcfce7", border: "#22c55e", color: "#15803d" },
+  "A Vencer":                    { bg: "#fef9c3", border: "#eab308", color: "#854d0e" },
+  "Vencido Internamente":        { bg: "#fff7ed", border: "#f97316", color: "#c2410c" },
+  "Vencido Legalmente":          { bg: "#fee2e2", border: "#ef4444", color: "#dc2626" },
+  "Finalizado no Prazo":         { bg: "#dcfce7", border: "#16a34a", color: "#14532d" },
+  "Finalizado no Vencimento Legal": { bg: "#fef9c3", border: "#ca8a04", color: "#713f12" },
+  "Finalizado em Atraso":        { bg: "#fee2e2", border: "#dc2626", color: "#991b1b" },
+};
+
+function calcSituacaoAuto(prazo_interno, prazo_legal, status) {
+  const finalizado = status === "Finalizado" || status === "Enviado por Email";
+  const hoje = today();
+  if (finalizado) {
+    if (prazo_legal && prazo_legal < hoje) return "Finalizado em Atraso";
+    if (prazo_interno && prazo_interno < hoje) return "Finalizado no Vencimento Legal";
+    return "Finalizado no Prazo";
+  }
+  if (prazo_legal && prazo_legal < hoje) return "Vencido Legalmente";
+  if (prazo_interno && prazo_interno < hoje) return "Vencido Internamente";
+  const ref = prazo_interno || prazo_legal;
+  if (!ref) return "No Prazo";
+  const diff = Math.ceil((new Date(ref) - new Date(hoje)) / (1000 * 60 * 60 * 24));
+  if (diff <= 7) return "A Vencer";
+  return "No Prazo";
+}
 
 function gerarCompetencias() {
   const lista = [];
   const hoje = new Date();
   for (let i = -12; i <= 3; i++) {
     const d = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    lista.push(`${mm}/${d.getFullYear()}`);
+    lista.push(`${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`);
   }
   return lista.reverse();
 }
 const COMPETENCIAS = gerarCompetencias();
-
 function competenciaAtual() {
-  const hoje = new Date();
-  return `${String(hoje.getMonth() + 1).padStart(2, "0")}/${hoje.getFullYear()}`;
-}
-
-const STATUS_STYLE = {
-  "A Fazer":      { bg: "#dbeafe", border: "#3b82f6", text: "#1d4ed8", dot: "#3b82f6" },
-  "Em Andamento": { bg: "#dcfce7", border: "#22c55e", text: "#15803d", dot: "#22c55e" },
-  "Revisão":      { bg: "#fef9c3", border: "#eab308", text: "#854d0e", dot: "#eab308" },
-  "Concluído":    { bg: "#dcfce7", border: "#16a34a", text: "#14532d", dot: "#16a34a" },
-  "Atrasado":     { bg: "#fee2e2", border: "#ef4444", text: "#dc2626", dot: "#ef4444" },
-};
-
-// ─── SITUAÇÃO VISUAL ────────────────────────────────────────────────────────
-function calcSituacao(prazo_interno, prazo_legal, status) {
-  if (status === "Concluído") return null;
-  const ref = prazo_legal || prazo_interno;
-  if (!ref) return null;
-  const hoje = new Date().toISOString().split("T")[0];
-  const diffDias = Math.ceil((new Date(ref) - new Date(hoje)) / (1000 * 60 * 60 * 24));
-  if (diffDias < 0) return { label: "Vencido", bg: "#fee2e2", color: "#dc2626", border: "#fca5a5" };
-  if (diffDias === 0) return { label: "Vencendo Hoje", bg: "#fff7ed", color: "#ea580c", border: "#fed7aa" };
-  if (diffDias <= 7) return { label: "A Vencer", bg: "#fef9c3", color: "#854d0e", border: "#fde047" };
-  return { label: "Em Dia", bg: "#dcfce7", color: "#15803d", border: "#86efac" };
+  const h = new Date();
+  return `${String(h.getMonth() + 1).padStart(2, "0")}/${h.getFullYear()}`;
 }
 
 function today() { return new Date().toISOString().split("T")[0]; }
 function toEmail(u) { return u.toLowerCase().trim() + DOMAIN; }
 function formatDate(d) { return d ? d.split("-").reverse().join("/") : "—"; }
-function isAtrasado(pi, pl, status) {
-  if (status === "Concluído") return false;
-  const ref = pi || pl;
-  return ref ? ref < today() : false;
-}
 function addMonths(dateStr, n) {
   const d = new Date(dateStr);
   d.setMonth(d.getMonth() + n);
@@ -72,6 +89,9 @@ const INPUT = {
   background: "white", border: "1px solid #94a3b8", borderRadius: 8,
   color: "#0f172a", padding: "10px 14px", fontSize: 14, width: "100%",
   outline: "none", fontFamily: "'Lato', sans-serif", boxSizing: "border-box",
+};
+const INPUT_SM = {
+  ...INPUT, padding: "7px 10px", fontSize: 13,
 };
 const LABEL = {
   fontSize: 12, color: "#475569", fontWeight: 600, letterSpacing: 1,
@@ -91,6 +111,146 @@ function Logo({ size = 24, dark = false }) {
         <span style={{ color: dark ? "#1a56db" : "white" }}>True</span>
         <span style={{ color: "#0ea5e9" }}>Tasks</span>
       </span>
+    </div>
+  );
+}
+
+// ─── DROPDOWN OPÇÕES ───────────────────────────────────────────────────────
+function OpcoesTarefa({ tarefa, onEditar, onReplicar, onAcao, isAdmin, podeEditar }) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function fechar(e) { if (ref.current && !ref.current.contains(e.target)) setAberto(false); }
+    document.addEventListener("mousedown", fechar);
+    return () => document.removeEventListener("mousedown", fechar);
+  }, []);
+
+  const opcoes = [
+    { label: "Editar", show: podeEditar, action: () => { onEditar(tarefa); setAberto(false); } },
+    { label: "Editar Responsável", show: isAdmin, action: () => { onAcao("responsavel", tarefa); setAberto(false); } },
+    { label: "Editar Revisor", show: isAdmin, action: () => { onAcao("revisor", tarefa); setAberto(false); } },
+    { label: "Editar Status", show: podeEditar, action: () => { onAcao("status", tarefa); setAberto(false); } },
+    { label: "Editar Vencimento", show: isAdmin, action: () => { onAcao("vencimento", tarefa); setAberto(false); } },
+    { label: "Complementar", show: podeEditar, action: () => { onAcao("complementar", tarefa); setAberto(false); } },
+    { label: "Reabrir", show: isAdmin, action: () => { onAcao("reabrir", tarefa); setAberto(false); } },
+    { label: "Retificar", show: isAdmin, action: () => { onAcao("retificar", tarefa); setAberto(false); } },
+    { label: "Replicar", show: isAdmin, action: () => { onReplicar(tarefa); setAberto(false); } },
+  ].filter(o => o.show);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button onClick={() => setAberto(!aberto)}
+        style={{ background: "white", border: "1px solid #cbd5e1", borderRadius: 7, color: "#475569", padding: "5px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+        Opções <span style={{ fontSize: 10 }}>{aberto ? "▲" : "▼"}</span>
+      </button>
+      {aberto && (
+        <div style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: "white", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 500, minWidth: 180, overflow: "hidden" }}>
+          {opcoes.map((o, i) => (
+            <button key={i} onClick={o.action}
+              style={{ display: "block", width: "100%", padding: "9px 16px", fontSize: 13, color: "#1e293b", background: "white", border: "none", textAlign: "left", cursor: "pointer", borderBottom: i < opcoes.length - 1 ? "1px solid #f1f5f9" : "none", fontFamily: "'Lato', sans-serif" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+              onMouseLeave={e => e.currentTarget.style.background = "white"}>
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── MODAL AÇÃO RÁPIDA ─────────────────────────────────────────────────────
+function ModalAcao({ tipo, tarefa, profiles, onFechar, onSalvar }) {
+  const [valor, setValor] = useState("");
+  const [valor2, setValor2] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const configs = {
+    responsavel: { titulo: "Editar Responsável", campo: "Novo Responsável", tipo: "select_profile" },
+    revisor: { titulo: "Editar Revisor", campo: "Novo Revisor", tipo: "select_profile" },
+    status: { titulo: "Editar Status", campo: "Novo Status", tipo: "select_status" },
+    vencimento: { titulo: "Editar Vencimento", campo: "Prazo Interno", tipo: "date_duplo" },
+    complementar: { titulo: "Tarefa Complementar", campo: "Motivo", tipo: "textarea" },
+    reabrir: { titulo: "Reabrir Tarefa", campo: "Motivo da reabertura", tipo: "textarea" },
+    retificar: { titulo: "Tarefa Retificadora", campo: "Motivo da retificação", tipo: "textarea" },
+  };
+
+  const cfg = configs[tipo];
+  if (!cfg) return null;
+
+  async function salvar() {
+    setLoading(true);
+    let updates = {};
+    if (tipo === "responsavel") {
+      const nome = profiles.find(p => p.id === valor)?.nome || "";
+      updates = { responsavel_id: valor, responsavel_nome: nome };
+    } else if (tipo === "revisor") {
+      const nome = profiles.find(p => p.id === valor)?.nome || "";
+      updates = { revisor_id: valor, revisor_nome: nome };
+    } else if (tipo === "status") {
+      updates = { status: valor };
+    } else if (tipo === "vencimento") {
+      updates = { prazo_interno: valor, prazo_legal: valor2 };
+    } else if (tipo === "complementar" || tipo === "reabrir") {
+      updates = { status: "Pendente", obs: (tarefa.obs ? tarefa.obs + "\n" : "") + `[${tipo === "complementar" ? "Complementar" : "Reaberto"}]: ${valor}` };
+    } else if (tipo === "retificar") {
+      await supabase.from("tarefas").insert({
+        ...tarefa, id: undefined, status: "Pendente",
+        obs: `[Retificação de #${tarefa.id}]: ${valor}`,
+        criado_por: tarefa.criado_por,
+      });
+      setLoading(false);
+      onSalvar();
+      return;
+    }
+    await supabase.from("tarefas").update(updates).eq("id", tarefa.id);
+    setLoading(false);
+    onSalvar();
+  }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 400, padding: 20 }}>
+      <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 440, boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 17, fontWeight: 800, color: "#1a56db" }}>{cfg.titulo}</div>
+          <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>
+        </div>
+        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>Tarefa: <strong style={{ color: "#1e293b" }}>{tarefa.cliente} — {tarefa.tipo}</strong></div>
+
+        {cfg.tipo === "select_profile" && (
+          <div><label style={LABEL}>{cfg.campo}</label>
+            <select value={valor} onChange={e => setValor(e.target.value)} style={INPUT}>
+              <option value="">Selecione...</option>
+              {profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+            </select>
+          </div>
+        )}
+        {cfg.tipo === "select_status" && (
+          <div><label style={LABEL}>{cfg.campo}</label>
+            <select value={valor} onChange={e => setValor(e.target.value)} style={INPUT}>
+              <option value="">Selecione...</option>
+              {STATUS_LIST.map(s => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+        )}
+        {cfg.tipo === "date_duplo" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div><label style={LABEL}>Prazo Interno</label><input type="date" value={valor} onChange={e => setValor(e.target.value)} style={INPUT} defaultValue={tarefa.prazo_interno} /></div>
+            <div><label style={LABEL}>Prazo Legal</label><input type="date" value={valor2} onChange={e => setValor2(e.target.value)} style={INPUT} defaultValue={tarefa.prazo_legal} /></div>
+          </div>
+        )}
+        {cfg.tipo === "textarea" && (
+          <div><label style={LABEL}>{cfg.campo}</label>
+            <textarea value={valor} onChange={e => setValor(e.target.value)} placeholder="Descreva o motivo..." style={{ ...INPUT, height: 100, resize: "vertical" }} />
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 12, marginTop: 24, justifyContent: "flex-end" }}>
+          <button onClick={onFechar} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 9, color: "#64748b", padding: "10px 20px", fontSize: 14, cursor: "pointer" }}>Cancelar</button>
+          <button onClick={salvar} disabled={loading} style={{ ...BTN_PRIMARY, width: "auto", opacity: loading ? 0.7 : 1 }}>{loading ? "Salvando..." : "Confirmar"}</button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -142,10 +302,9 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
   const [busca, setBusca] = useState("");
 
   async function criarCliente() {
-    if (!form.nome.trim()) { setErro("Informe o nome do cliente."); return; }
-    setLoading(true); setErro("");
-    const { error } = await supabase.from("clientes").insert({ nome: form.nome.trim(), cnpj: form.cnpj.trim(), responsavel_id: form.responsavel_id || null });
-    if (error) { setErro("Erro ao criar cliente."); setLoading(false); return; }
+    if (!form.nome.trim()) { setErro("Informe o nome."); return; }
+    setLoading(true);
+    await supabase.from("clientes").insert({ nome: form.nome.trim(), cnpj: form.cnpj.trim(), responsavel_id: form.responsavel_id || null });
     setMsg(`Cliente "${form.nome}" criado!`);
     setForm({ nome: "", cnpj: "", responsavel_id: "" });
     setModalNovo(false); onAtualizar(); setLoading(false);
@@ -168,7 +327,7 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
         </div>
         {msg && <div style={{ background: "#dcfce7", border: "1px solid #22c55e", borderRadius: 8, padding: "10px 14px", color: "#15803d", fontSize: 13, marginBottom: 16 }}>{msg}</div>}
         <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar por nome ou CNPJ..." style={{ ...INPUT, marginBottom: 16 }} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20, maxHeight: 320, overflowY: "auto" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20, maxHeight: 300, overflowY: "auto" }}>
           {filtrados.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Nenhum cliente cadastrado.</div>}
           {filtrados.map(c => {
             const resp = profiles.find(p => p.id === c.responsavel_id);
@@ -177,7 +336,7 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
                 <div>
                   <div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{c.nome}</div>
                   <div style={{ fontSize: 12, color: "#64748b", marginTop: 2, display: "flex", gap: 12 }}>
-                    {c.cnpj && <span style={{ background: "#f1f5f9", borderRadius: 4, padding: "1px 6px", fontFamily: "monospace" }}>{c.cnpj}</span>}
+                    {c.cnpj && <span style={{ fontFamily: "monospace" }}>{c.cnpj}</span>}
                     {resp && <span>Resp: {resp.nome}</span>}
                   </div>
                 </div>
@@ -189,13 +348,13 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
         <button onClick={() => { setModalNovo(true); setErro(""); setMsg(""); }} style={{ ...BTN_PRIMARY }}>+ Adicionar Novo Cliente</button>
         {modalNovo && (
           <div style={{ marginTop: 24, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20 }}>
-            <div style={{ fontWeight: 700, color: "#1a56db", marginBottom: 16, fontSize: 15 }}>Novo Cliente</div>
-            {erro && <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 8, padding: "8px 12px", color: "#dc2626", fontSize: 13, marginBottom: 12 }}>{erro}</div>}
+            <div style={{ fontWeight: 700, color: "#1a56db", marginBottom: 16 }}>Novo Cliente</div>
+            {erro && <div style={{ background: "#fee2e2", borderRadius: 8, padding: "8px 12px", color: "#dc2626", fontSize: 13, marginBottom: 12 }}>{erro}</div>}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div><label style={LABEL}>Nome *</label><input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Nome do cliente ou empresa" style={INPUT} /></div>
+              <div><label style={LABEL}>Nome *</label><input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Nome do cliente" style={INPUT} /></div>
               <div><label style={LABEL}>CNPJ</label><input value={form.cnpj} onChange={e => setForm(f => ({ ...f, cnpj: e.target.value }))} placeholder="00.000.000/0001-00" style={INPUT} /></div>
               <div><label style={LABEL}>Responsável padrão</label><select value={form.responsavel_id} onChange={e => setForm(f => ({ ...f, responsavel_id: e.target.value }))} style={INPUT}><option value="">Selecione...</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
-              <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+              <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => setModalNovo(false)} style={{ flex: 1, background: "white", border: "1px solid #e2e8f0", borderRadius: 9, color: "#64748b", padding: "10px", fontSize: 14, cursor: "pointer" }}>Cancelar</button>
                 <button onClick={criarCliente} disabled={loading} style={{ ...BTN_PRIMARY, flex: 2, width: "auto", opacity: loading ? 0.7 : 1 }}>{loading ? "Salvando..." : "Criar Cliente"}</button>
               </div>
@@ -261,14 +420,14 @@ function PainelUsuarios({ profiles, onAtualizar, onFechar }) {
         <button onClick={() => { setModalNovo(true); setErro(""); setMsg(""); }} style={{ ...BTN_PRIMARY }}>+ Adicionar Novo Usuário</button>
         {modalNovo && (
           <div style={{ marginTop: 24, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20 }}>
-            <div style={{ fontWeight: 700, color: "#1a56db", marginBottom: 16, fontSize: 15 }}>Novo Usuário</div>
-            {erro && <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 8, padding: "8px 12px", color: "#dc2626", fontSize: 13, marginBottom: 12 }}>{erro}</div>}
+            <div style={{ fontWeight: 700, color: "#1a56db", marginBottom: 16 }}>Novo Usuário</div>
+            {erro && <div style={{ background: "#fee2e2", borderRadius: 8, padding: "8px 12px", color: "#dc2626", fontSize: 13, marginBottom: 12 }}>{erro}</div>}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div><label style={LABEL}>Nome completo</label><input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Ex: Ana Lima" style={INPUT} /></div>
-              <div><label style={LABEL}>Usuário (para login)</label><input value={form.usuario} onChange={e => setForm(f => ({ ...f, usuario: e.target.value.replace(/\s/g, "") }))} placeholder="Ex: 001 ou ana" style={INPUT} /></div>
+              <div><label style={LABEL}>Usuário</label><input value={form.usuario} onChange={e => setForm(f => ({ ...f, usuario: e.target.value.replace(/\s/g, "") }))} placeholder="Ex: 001 ou ana" style={INPUT} /></div>
               <div><label style={LABEL}>Senha inicial</label><input type="password" value={form.senha} onChange={e => setForm(f => ({ ...f, senha: e.target.value }))} placeholder="Mínimo 6 caracteres" style={INPUT} /></div>
               <div><label style={LABEL}>Cargo</label><select value={form.cargo} onChange={e => setForm(f => ({ ...f, cargo: e.target.value }))} style={INPUT}><option value="colaborador">Colaborador</option><option value="admin">Administrador</option></select></div>
-              <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+              <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => setModalNovo(false)} style={{ flex: 1, background: "white", border: "1px solid #e2e8f0", borderRadius: 9, color: "#64748b", padding: "10px", fontSize: 14, cursor: "pointer" }}>Cancelar</button>
                 <button onClick={criarUsuario} disabled={loading} style={{ ...BTN_PRIMARY, flex: 2, width: "auto", opacity: loading ? 0.7 : 1 }}>{loading ? "Criando..." : "Criar Usuário"}</button>
               </div>
@@ -305,7 +464,7 @@ function ModalReplicar({ tarefa, clientes, profiles, onFechar, onConcluir }) {
         prazo: tarefa.prazo_interno, responsavel_id: respId, responsavel_nome: respNome,
         revisor_id: tarefa.revisor_id, revisor_nome: tarefa.revisor_nome,
         participantes: tarefa.participantes,
-        status: "A Fazer", obs: tarefa.obs, recorrente: tarefa.recorrente, criado_por: tarefa.criado_por,
+        status: "Pendente", obs: tarefa.obs, recorrente: tarefa.recorrente, criado_por: tarefa.criado_por,
       };
     });
     await supabase.from("tarefas").insert(novas);
@@ -334,7 +493,7 @@ function ModalReplicar({ tarefa, clientes, profiles, onFechar, onConcluir }) {
           <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar cliente..." style={{ ...INPUT, flex: 1 }} />
           <button onClick={() => setSelecionados(clientesFiltrados.map(c => c.id))} style={{ background: "#dbeafe", border: "none", borderRadius: 8, color: "#1d4ed8", padding: "10px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>Selecionar todos</button>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 280, overflowY: "auto", marginBottom: 20 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 260, overflowY: "auto", marginBottom: 20 }}>
           {clientesFiltrados.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Nenhum outro cliente cadastrado.</div>}
           {clientesFiltrados.map(c => {
             const sel = selecionados.includes(c.id);
@@ -378,9 +537,9 @@ export default function App() {
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtroStatus, setFiltroStatus] = useState("Todos");
+  const [filtroSituacao, setFiltroSituacao] = useState("Todos");
   const [filtroTipo, setFiltroTipo] = useState("Todos");
   const [filtroComp, setFiltroComp] = useState("Todos");
-  const [filtroSituacao, setFiltroSituacao] = useState("Todos");
   const [busca, setBusca] = useState("");
   const [esconderConcluidos, setEsconderConcluidos] = useState(false);
   const [modal, setModal] = useState(false);
@@ -389,12 +548,13 @@ export default function App() {
   const [painelUsuarios, setPainelUsuarios] = useState(false);
   const [painelClientes, setPainelClientes] = useState(false);
   const [modalReplicar, setModalReplicar] = useState(null);
+  const [modalAcao, setModalAcao] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   const [gerandoRecorrentes, setGerandoRecorrentes] = useState(false);
   const [msgRecorrente, setMsgRecorrente] = useState("");
   const [msgReplicar, setMsgReplicar] = useState("");
 
-  const formInicial = { cliente_id: "", tipo: "IRPF", competencia: competenciaAtual(), prazo_interno: today(), prazo_legal: today(), responsavel_id: "", revisor_id: "", participantes: "", status: "A Fazer", obs: "", recorrente: false };
+  const formInicial = { cliente_id: "", tipo: "IRPF", competencia: competenciaAtual(), prazo_interno: today(), prazo_legal: today(), responsavel_id: "", revisor_id: "", participantes: "", status: "Pendente", obs: "", recorrente: false };
   const [form, setForm] = useState(formInicial);
 
   useEffect(() => {
@@ -470,11 +630,6 @@ export default function App() {
     await carregarTarefas(); setDetalhes(null);
   }
 
-  async function alterarStatus(id, status) {
-    await supabase.from("tarefas").update({ status }).eq("id", id);
-    await carregarTarefas();
-  }
-
   async function gerarProximoMes() {
     setGerandoRecorrentes(true); setMsgRecorrente("");
     const recorrentes = tarefas.filter(t => t.recorrente);
@@ -487,7 +642,7 @@ export default function App() {
       responsavel_id: t.responsavel_id, responsavel_nome: t.responsavel_nome,
       revisor_id: t.revisor_id, revisor_nome: t.revisor_nome,
       participantes: t.participantes,
-      status: "A Fazer", obs: t.obs, recorrente: true, criado_por: t.criado_por,
+      status: "Pendente", obs: t.obs, recorrente: true, criado_por: t.criado_por,
     }));
     await supabase.from("tarefas").insert(novas);
     await carregarTarefas();
@@ -498,48 +653,44 @@ export default function App() {
   function exportarExcel() {
     const headers = ["Cliente", "CNPJ", "Competência", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Revisor", "Participantes", "Status", "Situação"];
     const rows = filtradas.map(t => {
-      const sit = calcSituacao(t.prazo_interno, t.prazo_legal, t.status);
-      return [t.cliente, t.cnpj_cliente || "", t.competencia || "", t.tipo, formatDate(t.prazo_interno), formatDate(t.prazo_legal), t.responsavel_nome, t.revisor_nome || "", t.participantes || "", t.status, sit?.label || ""];
+      const sit = calcSituacaoAuto(t.prazo_interno, t.prazo_legal, t.status);
+      return [t.cliente, t.cnpj_cliente || "", t.competencia || "", t.tipo, formatDate(t.prazo_interno), formatDate(t.prazo_legal), t.responsavel_nome, t.revisor_nome || "", t.participantes || "", t.status, sit];
     });
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-    ws["!cols"] = [{ wch: 30 }, { wch: 20 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 15 }];
+    ws["!cols"] = [{ wch: 30 }, { wch: 20 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 25 }, { wch: 20 }, { wch: 25 }];
     XLSX.utils.book_append_sheet(wb, ws, "Tarefas");
     XLSX.writeFile(wb, "truetasks_relatorio.xlsx");
   }
 
   const isAdmin = profile?.cargo === "admin";
 
-  const tarefasComStatus = tarefas.map(t => ({
-    ...t, status: isAtrasado(t.prazo_interno, t.prazo_legal, t.status) ? "Atrasado" : t.status
+  const tarefasEnriquecidas = tarefas.map(t => ({
+    ...t,
+    situacaoCalc: calcSituacaoAuto(t.prazo_interno, t.prazo_legal, t.status)
   }));
 
-  const filtradas = useMemo(() => tarefasComStatus.filter(t => {
+  const filtradas = useMemo(() => tarefasEnriquecidas.filter(t => {
     const matchStatus = filtroStatus === "Todos" || t.status === filtroStatus;
+    const matchSit = filtroSituacao === "Todos" || t.situacaoCalc === filtroSituacao;
     const matchTipo = filtroTipo === "Todos" || t.tipo === filtroTipo;
     const matchComp = filtroComp === "Todos" || t.competencia === filtroComp;
-    const sit = calcSituacao(t.prazo_interno, t.prazo_legal, t.status);
-    const matchSit = filtroSituacao === "Todos" || sit?.label === filtroSituacao;
     const matchBusca = t.cliente.toLowerCase().includes(busca.toLowerCase()) || (t.cnpj_cliente || "").includes(busca) || t.tipo.toLowerCase().includes(busca.toLowerCase());
-    const matchConcluido = !esconderConcluidos || t.status !== "Concluído";
-    return matchStatus && matchTipo && matchComp && matchSit && matchBusca && matchConcluido;
-  }), [tarefasComStatus, filtroStatus, filtroTipo, filtroComp, filtroSituacao, busca, esconderConcluidos]);
+    const matchConcluido = !esconderConcluidos || t.status !== "Finalizado";
+    return matchStatus && matchSit && matchTipo && matchComp && matchBusca && matchConcluido;
+  }), [tarefasEnriquecidas, filtroStatus, filtroSituacao, filtroTipo, filtroComp, busca, esconderConcluidos]);
 
-  const stats = useMemo(() => {
-    const s = { "A Fazer": 0, "Em Andamento": 0, "Concluído": 0, "Atrasado": 0 };
-    tarefasComStatus.forEach(t => { if (s[t.status] !== undefined) s[t.status]++; });
-    return s;
-  }, [tarefasComStatus]);
-
-  // Contadores de situação para os badges do topo
   const sitStats = useMemo(() => {
-    const s = { "Vencendo Hoje": 0, "A Vencer": 0, "Vencido": 0 };
-    tarefasComStatus.forEach(t => {
-      const sit = calcSituacao(t.prazo_interno, t.prazo_legal, t.status);
-      if (sit && s[sit.label] !== undefined) s[sit.label]++;
+    const s = { "Vencendo Hoje": 0, "A Vencer": 0, "Vencido Internamente": 0, "Vencido Legalmente": 0 };
+    tarefasEnriquecidas.forEach(t => {
+      const sit = t.situacaoCalc;
+      if (sit === "A Vencer") s["A Vencer"]++;
+      else if (sit === "Vencido Internamente") s["Vencido Internamente"]++;
+      else if (sit === "Vencido Legalmente") s["Vencido Legalmente"]++;
+      if (t.prazo_interno === today() || t.prazo_legal === today()) s["Vencendo Hoje"]++;
     });
     return s;
-  }, [tarefasComStatus]);
+  }, [tarefasEnriquecidas]);
 
   if (loading) return (
     <div style={{ minHeight: "100vh", background: "#f0f4f8", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", fontFamily: "'Lato', sans-serif" }}>
@@ -561,9 +712,14 @@ export default function App() {
           onFechar={() => setModalReplicar(null)}
           onConcluir={async (n) => {
             setModalReplicar(null); await carregarTarefas();
-            setMsgReplicar(`${n} tarefa(s) replicada(s) com sucesso!`);
+            setMsgReplicar(`${n} tarefa(s) replicada(s)!`);
             setTimeout(() => setMsgReplicar(""), 4000);
           }} />
+      )}
+      {modalAcao && (
+        <ModalAcao tipo={modalAcao.tipo} tarefa={modalAcao.tarefa} profiles={profiles}
+          onFechar={() => setModalAcao(null)}
+          onSalvar={async () => { setModalAcao(null); await carregarTarefas(); }} />
       )}
 
       {/* HEADER */}
@@ -586,45 +742,46 @@ export default function App() {
         </div>
       </div>
 
-      <div style={{ padding: "24px 24px" }}>
-        {msgRecorrente && <div style={{ background: "#dcfce7", border: "1px solid #22c55e", borderRadius: 10, padding: "12px 20px", color: "#15803d", fontSize: 14, marginBottom: 16 }}>{msgRecorrente}</div>}
-        {msgReplicar && <div style={{ background: "#dbeafe", border: "1px solid #3b82f6", borderRadius: 10, padding: "12px 20px", color: "#1d4ed8", fontSize: 14, marginBottom: 16 }}>{msgReplicar}</div>}
+      <div style={{ padding: "20px 24px" }}>
+        {msgRecorrente && <div style={{ background: "#dcfce7", border: "1px solid #22c55e", borderRadius: 10, padding: "10px 20px", color: "#15803d", fontSize: 14, marginBottom: 12 }}>{msgRecorrente}</div>}
+        {msgReplicar && <div style={{ background: "#dbeafe", border: "1px solid #3b82f6", borderRadius: 10, padding: "10px 20px", color: "#1d4ed8", fontSize: 14, marginBottom: 12 }}>{msgReplicar}</div>}
 
         {/* BADGES SITUAÇÃO */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
           {[
-            { label: "Vencendo Hoje", bg: "#fff7ed", color: "#ea580c", border: "#fed7aa" },
-            { label: "A Vencer", bg: "#fef9c3", color: "#854d0e", border: "#fde047" },
-            { label: "Vencido", bg: "#fee2e2", color: "#dc2626", border: "#fca5a5" },
+            { key: "Vencendo Hoje", bg: "#fff7ed", color: "#ea580c", border: "#fed7aa" },
+            { key: "A Vencer", bg: "#fef9c3", color: "#854d0e", border: "#fde047" },
+            { key: "Vencido Internamente", bg: "#fff7ed", color: "#c2410c", border: "#fed7aa" },
+            { key: "Vencido Legalmente", bg: "#fee2e2", color: "#dc2626", border: "#fca5a5" },
           ].map(sit => (
-            <button key={sit.label} onClick={() => setFiltroSituacao(filtroSituacao === sit.label ? "Todos" : sit.label)}
-              style={{ background: filtroSituacao === sit.label ? sit.bg : "white", border: `1.5px solid ${filtroSituacao === sit.label ? sit.border : "#e2e8f0"}`, borderRadius: 20, padding: "6px 16px", fontSize: 13, color: filtroSituacao === sit.label ? sit.color : "#64748b", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ background: sit.bg, color: sit.color, border: `1px solid ${sit.border}`, borderRadius: 10, padding: "1px 8px", fontSize: 12, fontWeight: 700 }}>{sitStats[sit.label]}</span>
-              {sit.label}
+            <button key={sit.key} onClick={() => setFiltroSituacao(filtroSituacao === sit.key ? "Todos" : sit.key)}
+              style={{ background: filtroSituacao === sit.key ? sit.bg : "white", border: `1.5px solid ${filtroSituacao === sit.key ? sit.border : "#e2e8f0"}`, borderRadius: 20, padding: "5px 14px", fontSize: 13, color: filtroSituacao === sit.key ? sit.color : "#64748b", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ background: sit.bg, color: sit.color, border: `1px solid ${sit.border}`, borderRadius: 10, padding: "1px 8px", fontSize: 12, fontWeight: 700 }}>{sitStats[sit.key]}</span>
+              {sit.key}
             </button>
           ))}
         </div>
 
         {/* FILTROS */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
-          <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar cliente, CNPJ ou tipo..." style={{ ...INPUT, maxWidth: 240, flex: 1 }} />
-          <select value={filtroComp} onChange={e => setFiltroComp(e.target.value)} style={{ ...INPUT, width: "auto" }}>
-            <option value="Todos">Todas as competências</option>
+        <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
+          <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar cliente, CNPJ..." style={{ ...INPUT_SM, maxWidth: 200, flex: 1 }} />
+          <select value={filtroComp} onChange={e => setFiltroComp(e.target.value)} style={{ ...INPUT_SM, width: "auto" }}>
+            <option value="Todos">Todas competências</option>
             {COMPETENCIAS.map(c => <option key={c}>{c}</option>)}
           </select>
-          <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} style={{ ...INPUT, width: "auto" }}>
+          <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} style={{ ...INPUT_SM, width: "auto" }}>
             <option value="Todos">Todos os status</option>
             {STATUS_LIST.map(s => <option key={s}>{s}</option>)}
           </select>
-          <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} style={{ ...INPUT, width: "auto" }}>
+          <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} style={{ ...INPUT_SM, width: "auto" }}>
             <option value="Todos">Todos os tipos</option>
             {TIPOS.map(t => <option key={t}>{t}</option>)}
           </select>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569", cursor: "pointer", whiteSpace: "nowrap" }}>
-            <input type="checkbox" checked={esconderConcluidos} onChange={e => setEsconderConcluidos(e.target.checked)} style={{ width: 16, height: 16 }} />
-            Esconder concluídos
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", cursor: "pointer", whiteSpace: "nowrap" }}>
+            <input type="checkbox" checked={esconderConcluidos} onChange={e => setEsconderConcluidos(e.target.checked)} style={{ width: 15, height: 15 }} />
+            Esconder finalizados
           </label>
-          <button onClick={exportarExcel} style={{ background: "#f0fdf4", border: "1px solid #22c55e", borderRadius: 8, color: "#15803d", padding: "10px 16px", fontSize: 13, cursor: "pointer", fontWeight: 600, marginLeft: "auto" }}>
+          <button onClick={exportarExcel} style={{ background: "#f0fdf4", border: "1px solid #22c55e", borderRadius: 8, color: "#15803d", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, marginLeft: "auto" }}>
             Exportar Excel
           </button>
         </div>
@@ -634,8 +791,8 @@ export default function App() {
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1100 }}>
             <thead>
               <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                {["Cliente", "CNPJ", "Competência", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Revisor", "Participantes", "Status", "Ações"].map(h => (
-                  <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: 11, color: "#64748b", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+                {["Cliente", "CNPJ", "Competência", "Tipo", "Prazo Interno", "Prazo Legal", "Responsável", "Revisor", "Participantes", "Status", "Situação", "Ações"].map(h => (
+                  <th key={h} style={{ padding: "11px 12px", textAlign: "left", fontSize: 11, color: "#64748b", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -644,43 +801,44 @@ export default function App() {
                 <tr><td colSpan={12} style={{ padding: 40, textAlign: "center", color: "#94a3b8" }}>Nenhuma tarefa encontrada.</td></tr>
               )}
               {filtradas.map((t, i) => {
-                const st = STATUS_STYLE[t.status];
-                const iAtrasado = t.prazo_interno && t.prazo_interno < today() && t.status !== "Concluído";
-                const lAtrasado = t.prazo_legal && t.prazo_legal < today() && t.status !== "Concluído";
-                const sit = calcSituacao(t.prazo_interno, t.prazo_legal, t.status);
+                const stStyle = STATUS_STYLE[t.status] || { bg: "#f1f5f9", border: "#cbd5e1", text: "#475569" };
+                const sitStyle = SITUACAO_STYLE[t.situacaoCalc] || { bg: "#f1f5f9", border: "#cbd5e1", color: "#475569" };
+                const iAtrasado = t.prazo_interno && t.prazo_interno < today() && t.status !== "Finalizado";
+                const lAtrasado = t.prazo_legal && t.prazo_legal < today() && t.status !== "Finalizado";
+                const podeEditar = isAdmin || t.responsavel_id === user.id;
                 return (
                   <tr key={t.id}
                     style={{ borderBottom: "1px solid #f1f5f9", background: i % 2 === 0 ? "white" : "#f8fafc" }}
                     onMouseEnter={e => e.currentTarget.style.background = "#f1f5f9"}
                     onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? "white" : "#f8fafc"}>
-                    <td style={{ padding: "12px 14px", fontWeight: 600, fontSize: 13, color: "#1e293b" }}>{t.cliente}</td>
-                    <td style={{ padding: "12px 14px", fontSize: 12, color: "#64748b", fontFamily: "monospace" }}>{t.cnpj_cliente || "—"}</td>
-                    <td style={{ padding: "12px 14px" }}>
-                      {t.competencia ? <span style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, padding: "3px 9px", fontSize: 12, color: "#475569", fontWeight: 600 }}>{t.competencia}</span> : <span style={{ color: "#94a3b8" }}>—</span>}
+                    <td style={{ padding: "11px 12px", fontWeight: 600, fontSize: 13, color: "#1e293b" }}>{t.cliente}</td>
+                    <td style={{ padding: "11px 12px", fontSize: 11, color: "#64748b", fontFamily: "monospace" }}>{t.cnpj_cliente || "—"}</td>
+                    <td style={{ padding: "11px 12px" }}>
+                      {t.competencia ? <span style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", fontSize: 11, color: "#475569", fontWeight: 600 }}>{t.competencia}</span> : <span style={{ color: "#94a3b8" }}>—</span>}
                     </td>
-                    <td style={{ padding: "12px 14px" }}><span style={{ background: "#dbeafe", borderRadius: 6, padding: "3px 9px", fontSize: 11, color: "#1d4ed8", fontWeight: 600 }}>{t.tipo}</span></td>
-                    <td style={{ padding: "12px 14px", fontSize: 13, color: iAtrasado ? "#dc2626" : "#475569", fontWeight: iAtrasado ? 700 : 400 }}>{formatDate(t.prazo_interno)}</td>
-                    <td style={{ padding: "12px 14px", fontSize: 13, color: lAtrasado ? "#dc2626" : "#94a3b8" }}>{formatDate(t.prazo_legal)}</td>
-                    <td style={{ padding: "12px 14px", fontSize: 13, color: "#64748b" }}>{t.responsavel_nome}</td>
-                    <td style={{ padding: "12px 14px", fontSize: 13, color: "#64748b" }}>{t.revisor_nome || "—"}</td>
-                    <td style={{ padding: "12px 14px", fontSize: 12, color: "#94a3b8", maxWidth: 150 }}>
+                    <td style={{ padding: "11px 12px" }}><span style={{ background: "#dbeafe", borderRadius: 6, padding: "2px 8px", fontSize: 11, color: "#1d4ed8", fontWeight: 600 }}>{t.tipo}</span></td>
+                    <td style={{ padding: "11px 12px", fontSize: 12, color: iAtrasado ? "#dc2626" : "#475569", fontWeight: iAtrasado ? 700 : 400 }}>{formatDate(t.prazo_interno)}</td>
+                    <td style={{ padding: "11px 12px", fontSize: 12, color: lAtrasado ? "#dc2626" : "#94a3b8" }}>{formatDate(t.prazo_legal)}</td>
+                    <td style={{ padding: "11px 12px", fontSize: 12, color: "#64748b" }}>{t.responsavel_nome}</td>
+                    <td style={{ padding: "11px 12px", fontSize: 12, color: "#64748b" }}>{t.revisor_nome || "—"}</td>
+                    <td style={{ padding: "11px 12px", fontSize: 11, color: "#94a3b8", maxWidth: 130 }}>
                       {t.participantes ? <span title={t.participantes} style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.participantes}</span> : "—"}
                     </td>
-                   <td style={{ padding: "12px 14px" }}>
-                      {sit ? (
-                        <span style={{ background: sit.bg, border: `1px solid ${sit.border}`, borderRadius: 20, padding: "3px 12px", fontSize: 12, color: sit.color, fontWeight: 600, whiteSpace: "nowrap" }}>{sit.label}</span>
-                      ) : (
-                        <span style={{ background: st.bg, border: `1px solid ${st.border}`, borderRadius: 20, padding: "3px 12px", fontSize: 12, color: st.text, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
-                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: st.dot, flexShrink: 0 }} />{t.status}
-                        </span>
-                      )}
+                    <td style={{ padding: "11px 12px" }}>
+                      <span style={{ background: stStyle.bg, border: `1px solid ${stStyle.border}`, borderRadius: 20, padding: "3px 10px", fontSize: 11, color: stStyle.text, fontWeight: 600, whiteSpace: "nowrap" }}>{t.status}</span>
                     </td>
-                    <td style={{ padding: "12px 14px" }}>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button onClick={() => setDetalhes(t)} style={{ background: "#dbeafe", border: "none", borderRadius: 7, color: "#1d4ed8", padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Ver</button>
-                        {(isAdmin || t.responsavel_id === user.id) && <button onClick={() => abrirEditar(t)} style={{ background: "#dcfce7", border: "none", borderRadius: 7, color: "#15803d", padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Editar</button>}
-                        {isAdmin && <button onClick={() => setModalReplicar(t)} style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 7, color: "#0284c7", padding: "5px 10px", fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Replicar</button>}
-                      </div>
+                    <td style={{ padding: "11px 12px" }}>
+                      <span style={{ background: sitStyle.bg, border: `1px solid ${sitStyle.border}`, borderRadius: 20, padding: "3px 10px", fontSize: 11, color: sitStyle.color, fontWeight: 600, whiteSpace: "nowrap" }}>{t.situacaoCalc}</span>
+                    </td>
+                    <td style={{ padding: "11px 12px" }}>
+                      <OpcoesTarefa
+                        tarefa={t}
+                        isAdmin={isAdmin}
+                        podeEditar={podeEditar}
+                        onEditar={abrirEditar}
+                        onReplicar={setModalReplicar}
+                        onAcao={(tipo, tarefa) => setModalAcao({ tipo, tarefa })}
+                      />
                     </td>
                   </tr>
                 );
@@ -696,11 +854,7 @@ export default function App() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}>
           <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 600, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
             <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#1a56db", marginBottom: 24 }}>{editando ? "Editar Tarefa" : "Nova Tarefa"}</div>
-            {clientes.length === 0 && (
-              <div style={{ background: "#fef9c3", border: "1px solid #eab308", borderRadius: 8, padding: "10px 14px", color: "#854d0e", fontSize: 13, marginBottom: 16 }}>
-                Nenhum cliente cadastrado. Cadastre clientes antes de criar tarefas.
-              </div>
-            )}
+            {clientes.length === 0 && <div style={{ background: "#fef9c3", border: "1px solid #eab308", borderRadius: 8, padding: "10px 14px", color: "#854d0e", fontSize: 13, marginBottom: 16 }}>Nenhum cliente cadastrado. Cadastre clientes antes.</div>}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div style={{ gridColumn: "1/-1" }}>
                 <label style={LABEL}>Cliente *</label>
@@ -716,14 +870,10 @@ export default function App() {
               <div><label style={LABEL}>Competência</label><select value={form.competencia} onChange={e => setForm(f => ({ ...f, competencia: e.target.value }))} style={INPUT}>{COMPETENCIAS.map(c => <option key={c}>{c}</option>)}</select></div>
               <div><label style={LABEL}>Responsável</label><select value={form.responsavel_id} onChange={e => setForm(f => ({ ...f, responsavel_id: e.target.value }))} style={INPUT}><option value="">Selecione...</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
               <div><label style={LABEL}>Revisor</label><select value={form.revisor_id} onChange={e => setForm(f => ({ ...f, revisor_id: e.target.value }))} style={INPUT}><option value="">Sem revisor</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
-              <div style={{ gridColumn: "1/-1" }}>
-                <label style={LABEL}>Participantes</label>
-                <input value={form.participantes} onChange={e => setForm(f => ({ ...f, participantes: e.target.value }))} placeholder="Ex: Ana Lima, Carlos Souza" style={INPUT} />
-                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Separe os nomes por vírgula</div>
-              </div>
-              <div><label style={LABEL}>Prazo Interno</label><input type="date" value={form.prazo_interno} onChange={e => setForm(f => ({ ...f, prazo_interno: e.target.value }))} style={INPUT} /><div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Prazo do escritório</div></div>
-              <div><label style={LABEL}>Prazo Legal</label><input type="date" value={form.prazo_legal} onChange={e => setForm(f => ({ ...f, prazo_legal: e.target.value }))} style={INPUT} /><div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Prazo oficial de entrega</div></div>
-              <div><label style={LABEL}>Status</label><select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} style={INPUT}>{STATUS_LIST.filter(s => s !== "Atrasado").map(s => <option key={s}>{s}</option>)}</select></div>
+              <div style={{ gridColumn: "1/-1" }}><label style={LABEL}>Participantes</label><input value={form.participantes} onChange={e => setForm(f => ({ ...f, participantes: e.target.value }))} placeholder="Ex: Ana Lima, Carlos Souza" style={INPUT} /><div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Separe os nomes por vírgula</div></div>
+              <div><label style={LABEL}>Prazo Interno</label><input type="date" value={form.prazo_interno} onChange={e => setForm(f => ({ ...f, prazo_interno: e.target.value }))} style={INPUT} /></div>
+              <div><label style={LABEL}>Prazo Legal</label><input type="date" value={form.prazo_legal} onChange={e => setForm(f => ({ ...f, prazo_legal: e.target.value }))} style={INPUT} /></div>
+              <div><label style={LABEL}>Status</label><select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} style={INPUT}>{STATUS_LIST.map(s => <option key={s}>{s}</option>)}</select></div>
               <div style={{ gridColumn: "1/-1" }}><label style={LABEL}>Observações</label><textarea value={form.obs} onChange={e => setForm(f => ({ ...f, obs: e.target.value }))} placeholder="Anotações adicionais..." style={{ ...INPUT, height: 70, resize: "vertical" }} /></div>
               <div style={{ gridColumn: "1/-1", display: "flex", alignItems: "center", gap: 12, background: "#f8fafc", borderRadius: 10, padding: "14px 16px", border: "1px solid #e2e8f0" }}>
                 <input type="checkbox" id="recorrente" checked={form.recorrente} onChange={e => setForm(f => ({ ...f, recorrente: e.target.checked }))} style={{ width: 18, height: 18, cursor: "pointer" }} />
@@ -743,13 +893,13 @@ export default function App() {
 
       {/* MODAL DETALHES */}
       {detalhes && (() => {
-        const t = tarefasComStatus.find(x => x.id === detalhes.id) || detalhes;
-        const st = STATUS_STYLE[t.status];
-        const sit = calcSituacao(t.prazo_interno, t.prazo_legal, t.status);
+        const t = tarefasEnriquecidas.find(x => x.id === detalhes.id) || detalhes;
+        const stStyle = STATUS_STYLE[t.status] || { bg: "#f1f5f9", border: "#cbd5e1", text: "#475569" };
+        const sitStyle = SITUACAO_STYLE[t.situacaoCalc] || { bg: "#f1f5f9", border: "#cbd5e1", color: "#475569" };
         const podeEditar = isAdmin || t.responsavel_id === user.id;
         return (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}>
-            <div style={{ background: "white", border: `2px solid ${st.border}`, borderRadius: 16, padding: 32, width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+            <div style={{ background: "white", border: `2px solid ${stStyle.border}`, borderRadius: 16, padding: 32, width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                 <div>
                   <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b" }}>{t.cliente}</div>
@@ -757,19 +907,17 @@ export default function App() {
                 </div>
                 <button onClick={() => setDetalhes(null)} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>
               </div>
-              {sit && (
-                <div style={{ background: sit.bg, border: `1px solid ${sit.border}`, borderRadius: 8, padding: "8px 14px", color: sit.color, fontSize: 13, fontWeight: 600, marginBottom: 16, display: "inline-block" }}>{sit.label}</div>
-              )}
+              <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+                <span style={{ background: stStyle.bg, border: `1px solid ${stStyle.border}`, borderRadius: 20, padding: "4px 12px", fontSize: 12, color: stStyle.text, fontWeight: 600 }}>{t.status}</span>
+                <span style={{ background: sitStyle.bg, border: `1px solid ${sitStyle.border}`, borderRadius: 20, padding: "4px 12px", fontSize: 12, color: sitStyle.color, fontWeight: 600 }}>{t.situacaoCalc}</span>
+              </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 {[
-                  ["Tipo", t.tipo],
-                  ["Competência", t.competencia || "—"],
-                  ["Prazo Interno", <span style={{ color: t.prazo_interno < today() && t.status !== "Concluído" ? "#dc2626" : "#1e293b" }}>{formatDate(t.prazo_interno)}</span>],
-                  ["Prazo Legal", <span style={{ color: t.prazo_legal < today() && t.status !== "Concluído" ? "#dc2626" : "#1e293b" }}>{formatDate(t.prazo_legal)}</span>],
-                  ["Responsável", t.responsavel_nome],
-                  ["Revisor", t.revisor_nome || "—"],
-                  ["Participantes", t.participantes || "—"],
-                  ["Recorrente", t.recorrente ? "Sim" : "Não"],
+                  ["Tipo", t.tipo], ["Competência", t.competencia || "—"],
+                  ["Prazo Interno", <span style={{ color: t.prazo_interno < today() && t.status !== "Finalizado" ? "#dc2626" : "#1e293b" }}>{formatDate(t.prazo_interno)}</span>],
+                  ["Prazo Legal", <span style={{ color: t.prazo_legal < today() && t.status !== "Finalizado" ? "#dc2626" : "#1e293b" }}>{formatDate(t.prazo_legal)}</span>],
+                  ["Responsável", t.responsavel_nome], ["Revisor", t.revisor_nome || "—"],
+                  ["Participantes", t.participantes || "—"], ["Recorrente", t.recorrente ? "Sim" : "Não"],
                 ].map(([k, v]) => (
                   <div key={k} style={{ background: "#f8fafc", borderRadius: 10, padding: "12px 14px", border: "1px solid #e2e8f0" }}>
                     <div style={{ fontSize: 11, color: "#64748b", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>{k}</div>
@@ -777,20 +925,6 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              {podeEditar && (
-                <div style={{ marginTop: 14 }}>
-                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Alterar Status</div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {STATUS_LIST.filter(s => s !== "Atrasado").map(s => {
-                      const ss = STATUS_STYLE[s];
-                      return (
-                        <button key={s} onClick={() => { alterarStatus(t.id, s); setDetalhes({ ...t, status: s }); }}
-                          style={{ background: t.status === s ? ss.bg : "white", border: `1px solid ${t.status === s ? ss.border : "#e2e8f0"}`, borderRadius: 20, color: t.status === s ? ss.text : "#64748b", padding: "5px 14px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>{s}</button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
               {t.obs && (
                 <div style={{ marginTop: 14, background: "#f8fafc", borderRadius: 10, padding: "12px 16px", border: "1px solid #e2e8f0" }}>
                   <div style={{ fontSize: 11, color: "#64748b", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Observações</div>
