@@ -119,12 +119,12 @@ function GerenciarAcoes({ selecionados, tarefas, profiles, onAtualizar, onLimpar
   const tarefasSel = tarefas.filter(t => selecionados.includes(t.id));
 
   const opcoes = [
+    { label: "Adicionar Participantes", key: "add_participantes" },
+    { label: "Remover Participantes", key: "rem_participantes" },
     { label: "Editar Responsável", key: "responsavel" },
     { label: "Editar Revisor", key: "revisor" },
     { label: "Editar Status", key: "status" },
     { label: "Editar Vencimento", key: "vencimento" },
-    { label: "Complementar", key: "complementar" },
-    { label: "Reabrir", key: "reabrir" },
     { label: "Excluir", key: "excluir", danger: true },
   ];
 
@@ -137,11 +137,18 @@ function GerenciarAcoes({ selecionados, tarefas, profiles, onAtualizar, onLimpar
     const updates = [];
     for (const t of tarefasSel) {
       let u = {};
-      if (tipo === "responsavel") u = { responsavel_id: valor, responsavel_nome: profiles.find(p => p.id === valor)?.nome || "" };
-      else if (tipo === "revisor") u = { revisor_id: valor, revisor_nome: profiles.find(p => p.id === valor)?.nome || "" };
-      else if (tipo === "status") u = { status: valor };
-      else if (tipo === "vencimento") u = { prazo_interno: valor || t.prazo_interno, prazo_legal: valor2 || t.prazo_legal };
-      else if (tipo === "complementar" || tipo === "reabrir") u = { status: "Pendente", obs: (t.obs ? t.obs + "\n" : "") + `[${tipo === "complementar" ? "Complementar" : "Reaberto"}]: ${valor}` };
+      if (tipo === "add_participantes") {
+        const atual = t.participantes ? t.participantes.split(",").map(p => p.trim()) : [];
+        const novos = valor.split(",").map(p => p.trim()).filter(p => p && !atual.includes(p));
+        u = { participantes: [...atual, ...novos].join(", ") };
+      } else if (tipo === "rem_participantes") {
+        const remover = valor.split(",").map(p => p.trim().toLowerCase());
+        const atual = t.participantes ? t.participantes.split(",").map(p => p.trim()) : [];
+        u = { participantes: atual.filter(p => !remover.includes(p.toLowerCase())).join(", ") };
+      } else if (tipo === "responsavel") { u = { responsavel_id: valor, responsavel_nome: profiles.find(p => p.id === valor)?.nome || "" }; }
+      else if (tipo === "revisor") { u = { revisor_id: valor, revisor_nome: profiles.find(p => p.id === valor)?.nome || "" }; }
+      else if (tipo === "status") { u = { status: valor }; }
+      else if (tipo === "vencimento") { u = { prazo_interno: valor || t.prazo_interno, prazo_legal: valor2 || t.prazo_legal }; }
       updates.push(supabase.from("tarefas").update(u).eq("id", t.id));
     }
     await Promise.all(updates);
@@ -185,12 +192,12 @@ function ModalAcaoLote({ tipo, count, profiles, onFechar, onSalvar }) {
   const [valor, setValor] = useState("");
   const [valor2, setValor2] = useState("");
   const configs = {
+    add_participantes: { titulo: "Adicionar Participantes em Lote", tipo: "textarea", placeholder: "Ex: Ana Lima, Carlos Souza" },
+    rem_participantes: { titulo: "Remover Participantes em Lote", tipo: "textarea", placeholder: "Ex: Ana Lima, Carlos Souza" },
     responsavel: { titulo: "Editar Responsável em Lote", tipo: "select_profile" },
     revisor: { titulo: "Editar Revisor em Lote", tipo: "select_profile" },
     status: { titulo: "Editar Status em Lote", tipo: "select_status" },
     vencimento: { titulo: "Editar Vencimento em Lote", tipo: "date_duplo" },
-    complementar: { titulo: "Complementar em Lote", tipo: "textarea" },
-    reabrir: { titulo: "Reabrir em Lote", tipo: "textarea" },
   };
   const cfg = configs[tipo];
   if (!cfg) return null;
@@ -205,7 +212,7 @@ function ModalAcaoLote({ tipo, count, profiles, onFechar, onSalvar }) {
         {cfg.tipo === "select_profile" && <div><label style={LABEL}>Selecione</label><select value={valor} onChange={e => setValor(e.target.value)} style={INPUT}><option value="">Selecione...</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>}
         {cfg.tipo === "select_status" && <div><label style={LABEL}>Novo Status</label><select value={valor} onChange={e => setValor(e.target.value)} style={INPUT}><option value="">Selecione...</option>{STATUS_LIST.map(s => <option key={s}>{s}</option>)}</select></div>}
         {cfg.tipo === "date_duplo" && <div style={{ display: "flex", flexDirection: "column", gap: 12 }}><div><label style={LABEL}>Prazo Interno</label><input type="date" value={valor} onChange={e => setValor(e.target.value)} style={INPUT} /></div><div><label style={LABEL}>Prazo Legal</label><input type="date" value={valor2} onChange={e => setValor2(e.target.value)} style={INPUT} /></div></div>}
-        {cfg.tipo === "textarea" && <div><label style={LABEL}>Motivo</label><textarea value={valor} onChange={e => setValor(e.target.value)} placeholder="Descreva o motivo..." style={{ ...INPUT, height: 100, resize: "vertical" }} /></div>}
+        {cfg.tipo === "textarea" && <div><label style={LABEL}>{cfg.titulo.includes("Participantes") ? "Participantes (separados por vírgula)" : "Motivo"}</label><textarea value={valor} onChange={e => setValor(e.target.value)} placeholder={cfg.placeholder || "Descreva o motivo..."} style={{ ...INPUT, height: 100, resize: "vertical" }} /></div>}
         <div style={{ display: "flex", gap: 12, marginTop: 24, justifyContent: "flex-end" }}>
           <button onClick={onFechar} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 9, color: "#64748b", padding: "10px 20px", fontSize: 14, cursor: "pointer" }}>Cancelar</button>
           <button onClick={() => onSalvar(valor, valor2)} style={{ ...BTN_PRIMARY, width: "auto" }}>Confirmar</button>
