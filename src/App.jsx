@@ -521,7 +521,7 @@ export default function App() {
     { key: "participantes", label: "Participantes", w: 130 },
     { key: "status", label: "Status", w: 130 },
     { key: "situacao", label: "Situação", w: 160 },
-    { key: "acoes", label: "Ações", w: 100 },
+    { key: "acoes", label: "Ações", w: 10 },
   ];
   const [colOrder, setColOrder] = useState(COL_DEFS.map(c => c.key));
   const [colWidths, setColWidths] = useState(Object.fromEntries(COL_DEFS.map(c => [c.key, c.w])));
