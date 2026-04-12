@@ -868,22 +868,12 @@ export default function App() {
               <div><label style={LABEL}>Revisor</label><select value={form.revisor_id} onChange={e => setForm(f => ({ ...f, revisor_id: e.target.value }))} style={INPUT}><option value="">Sem revisor</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
               <div style={{ gridColumn: "1/-1" }}>
                 <label style={LABEL}>Participantes</label>
-                <div style={{ border: "1px solid #94a3b8", borderRadius: 8, background: "white", padding: "8px 12px", maxHeight: 130, overflowY: "auto" }}>
-                  {profiles.map(p => {
-                    const sels = (form.participantes || "").split(",").map(x => x.trim()).filter(Boolean);
-                    const marcado = sels.includes(p.nome);
-                    return (
-                      <label key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", cursor: "pointer", fontSize: 13, color: "#1e293b" }}>
-                        <input type="checkbox" checked={marcado} onChange={() => {
-                          const atual = (form.participantes || "").split(",").map(x => x.trim()).filter(Boolean);
-                          const novo = marcado ? atual.filter(n => n !== p.nome) : [...atual, p.nome];
-                          setForm(f => ({ ...f, participantes: novo.join(", ") }));
-                        }} style={{ width: 15, height: 15 }} />
-                        {p.nome}
-                      </label>
-                    );
-                  })}
-                </div>
+                <select multiple value={(form.participantes || "").split(",").map(x => x.trim()).filter(Boolean)}
+                  onChange={e => { const sel = Array.from(e.target.selectedOptions).map(o => o.value); setForm(f => ({ ...f, participantes: sel.join(", ") })); }}
+                  style={{ ...INPUT, height: 90, padding: "4px" }}>
+                  {profiles.map(p => <option key={p.id} value={p.nome}>{p.nome}</option>)}
+                </select>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Segure Ctrl (ou Cmd) para selecionar mais de um</div>
               </div>
               <div><label style={LABEL}>Prazo Interno</label><input type="date" value={form.prazo_interno} onChange={e => setForm(f => ({ ...f, prazo_interno: e.target.value }))} style={INPUT} /></div>
               <div><label style={LABEL}>Prazo Legal</label><input type="date" value={form.prazo_legal} onChange={e => setForm(f => ({ ...f, prazo_legal: e.target.value }))} style={INPUT} /></div>
