@@ -868,12 +868,22 @@ export default function App() {
               <div><label style={LABEL}>Revisor</label><select value={form.revisor_id} onChange={e => setForm(f => ({ ...f, revisor_id: e.target.value }))} style={INPUT}><option value="">Sem revisor</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
               <div style={{ gridColumn: "1/-1" }}>
                 <label style={LABEL}>Participantes</label>
-                <select multiple value={(form.participantes || "").split(",").map(x => x.trim()).filter(Boolean)}
-                  onChange={e => { const sel = Array.from(e.target.selectedOptions).map(o => o.value); setForm(f => ({ ...f, participantes: sel.join(", ") })); }}
-                  style={{ ...INPUT, height: 90, padding: "4px" }}>
-                  {profiles.map(p => <option key={p.id} value={p.nome}>{p.nome}</option>)}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: (form.participantes || "").split(",").map(x=>x.trim()).filter(Boolean).length > 0 ? 8 : 0 }}>
+                  {(form.participantes || "").split(",").map(x => x.trim()).filter(Boolean).map(nome => (
+                    <span key={nome} style={{ background: "#dbeafe", color: "#1d4ed8", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                      {nome}
+                      <span onClick={() => { const atual = (form.participantes || "").split(",").map(x => x.trim()).filter(Boolean); setForm(f => ({ ...f, participantes: atual.filter(n => n !== nome).join(", ") })); }} style={{ cursor: "pointer", fontWeight: 700, fontSize: 13, lineHeight: 1, color: "#1d4ed8" }}>×</span>
+                    </span>
+                  ))}
+                </div>
+                <select value="" onChange={e => {
+                  if (!e.target.value) return;
+                  const atual = (form.participantes || "").split(",").map(x => x.trim()).filter(Boolean);
+                  if (!atual.includes(e.target.value)) setForm(f => ({ ...f, participantes: [...atual, e.target.value].join(", ") }));
+                }} style={INPUT}>
+                  <option value="">Adicionar participante...</option>
+                  {profiles.filter(p => !(form.participantes || "").split(",").map(x => x.trim()).includes(p.nome)).map(p => <option key={p.id} value={p.nome}>{p.nome}</option>)}
                 </select>
-                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Segure Ctrl (ou Cmd) para selecionar mais de um</div>
               </div>
               <div><label style={LABEL}>Prazo Interno</label><input type="date" value={form.prazo_interno} onChange={e => setForm(f => ({ ...f, prazo_interno: e.target.value }))} style={INPUT} /></div>
               <div><label style={LABEL}>Prazo Legal</label><input type="date" value={form.prazo_legal} onChange={e => setForm(f => ({ ...f, prazo_legal: e.target.value }))} style={INPUT} /></div>
