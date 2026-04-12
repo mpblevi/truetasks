@@ -591,7 +591,7 @@ export default function App() {
     const clienteObj = clientes.find(c => c.id === parseInt(form.cliente_id));
     const respNome = profiles.find(p => p.id === form.responsavel_id)?.nome || "";
     const revNome = profiles.find(p => p.id === form.revisor_id)?.nome || "";
-    const payload = { cliente: clienteObj?.nome || "", cnpj_cliente: clienteObj?.cnpj || "", codigo_cliente: clienteObj?.codigo || "", tipo: form.tipo, competencia: form.competencia, prazo_interno: form.prazo_interno, prazo_legal: form.prazo_legal, prazo: form.prazo_interno, responsavel_id: form.responsavel_id, responsavel_nome: respNome, revisor_id: form.revisor_id || null, revisor_nome: revNome, participantes: form.participantes, status: form.status, obs: form.obs, recorrente: form.recorrente, criado_por: user.id };
+    const payload = { cliente: clienteObj?.nome || "", cnpj_cliente: clienteObj?.cnpj || "", codigo_cliente: clienteObj?.codigo || "", tipo: form.tipo, competencia: form.competencia, prazo_interno: form.prazo_interno, prazo_legal: form.prazo_legal, prazo: form.prazo_interno, responsavel_id: form.responsavel_id, responsavel_nome: respNome, revisor_id: form.revisor_id || null, revisor_nome: revNome, participantes: form.participantes, status: editando ? form.status : "Pendente", obs: form.obs, recorrente: form.recorrente, criado_por: user.id };
     if (editando) { await supabase.from("tarefas").update(payload).eq("id", editando); } else { await supabase.from("tarefas").insert(payload); }
     await carregarTarefas(); setModal(false); setFormLoading(false);
   }
@@ -602,8 +602,21 @@ export default function App() {
   }
   async function gerarProximoMes() {
     setGerandoRecorrentes(true); setMsgRecorrente("");
-    const recorrentes = tarefas.filter(t => t.recorrente);
-    if (recorrentes.length === 0) { setMsgRecorrente("Nenhuma tarefa recorrente."); setGerandoRecorrentes(false); return; }
+    const todasRecorrentes = tarefas.filter(t => t.recorrente);
+    if (todasRecorrentes.length === 0) { setMsgRecorrente("Nenhuma tarefa recorrente."); setGerandoRecorrentes(false); return; }
+    // Encontra o prazo_interno mais recente entre as recorrentes para evitar duplicatas
+    const maxPrazo = todasRecorrentes.map(t => t.prazo_interno).filter(Boolean).sort().reverse()[0];
+    // Agrupa por chave única (cliente+tipo) e pega só a mais recente de cada
+    const porChave = {};
+    todasRecorrentes.forEach(t => {
+      const chave = t.cliente + "||" + t.tipo;
+      if (!porChave[chave] || t.prazo_interno > porChave[chave].prazo_interno) porChave[chave] = t;
+    });
+    const recorrentes = Object.values(porChave);
+    const proximoMes = addMonths(maxPrazo, 1);
+    // Verifica se já existem tarefas geradas para esse próximo mês
+    const jaExiste = tarefas.some(t => t.recorrente && t.prazo_interno && t.prazo_interno.startsWith(proximoMes.substring(0, 7)));
+    if (jaExiste) { setMsgRecorrente("Tarefas do próximo mês já foram geradas!"); setGerandoRecorrentes(false); return; }
     const novas = recorrentes.map(t => ({ cliente: t.cliente, cnpj_cliente: t.cnpj_cliente, codigo_cliente: t.codigo_cliente, tipo: t.tipo, competencia: addMonthsComp(t.competencia, 1), prazo_interno: addMonths(t.prazo_interno, 1), prazo_legal: addMonths(t.prazo_legal, 1), prazo: addMonths(t.prazo_interno, 1), responsavel_id: t.responsavel_id, responsavel_nome: t.responsavel_nome, revisor_id: t.revisor_id, revisor_nome: t.revisor_nome, participantes: t.participantes, status: "Pendente", obs: t.obs, recorrente: true, criado_por: t.criado_por }));
     await supabase.from("tarefas").insert(novas); await carregarTarefas();
     setMsgRecorrente(`${novas.length} tarefa(s) gerada(s)!`); setGerandoRecorrentes(false);
@@ -853,10 +866,28 @@ export default function App() {
               <div><label style={LABEL}>Competência</label><select value={form.competencia} onChange={e => setForm(f => ({ ...f, competencia: e.target.value }))} style={INPUT}>{COMPETENCIAS.map(c => <option key={c}>{c}</option>)}</select></div>
               <div><label style={LABEL}>Responsável</label><select value={form.responsavel_id} onChange={e => setForm(f => ({ ...f, responsavel_id: e.target.value }))} style={INPUT}><option value="">Selecione...</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
               <div><label style={LABEL}>Revisor</label><select value={form.revisor_id} onChange={e => setForm(f => ({ ...f, revisor_id: e.target.value }))} style={INPUT}><option value="">Sem revisor</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
-              <div style={{ gridColumn: "1/-1" }}><label style={LABEL}>Participantes</label><input value={form.participantes} onChange={e => setForm(f => ({ ...f, participantes: e.target.value }))} placeholder="Ex: Ana Lima, Carlos Souza" style={INPUT} /></div>
+              <div style={{ gridColumn: "1/-1" }}>
+                <label style={LABEL}>Participantes</label>
+                <div style={{ border: "1px solid #94a3b8", borderRadius: 8, background: "white", padding: "8px 12px", maxHeight: 130, overflowY: "auto" }}>
+                  {profiles.map(p => {
+                    const sels = (form.participantes || "").split(",").map(x => x.trim()).filter(Boolean);
+                    const marcado = sels.includes(p.nome);
+                    return (
+                      <label key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", cursor: "pointer", fontSize: 13, color: "#1e293b" }}>
+                        <input type="checkbox" checked={marcado} onChange={() => {
+                          const atual = (form.participantes || "").split(",").map(x => x.trim()).filter(Boolean);
+                          const novo = marcado ? atual.filter(n => n !== p.nome) : [...atual, p.nome];
+                          setForm(f => ({ ...f, participantes: novo.join(", ") }));
+                        }} style={{ width: 15, height: 15 }} />
+                        {p.nome}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
               <div><label style={LABEL}>Prazo Interno</label><input type="date" value={form.prazo_interno} onChange={e => setForm(f => ({ ...f, prazo_interno: e.target.value }))} style={INPUT} /></div>
               <div><label style={LABEL}>Prazo Legal</label><input type="date" value={form.prazo_legal} onChange={e => setForm(f => ({ ...f, prazo_legal: e.target.value }))} style={INPUT} /></div>
-              <div><label style={LABEL}>Status</label><select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} style={INPUT}>{STATUS_LIST.map(s => <option key={s}>{s}</option>)}</select></div>
+              {editando && <div><label style={LABEL}>Status</label><select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} style={INPUT}>{STATUS_LIST.map(s => <option key={s}>{s}</option>)}</select></div>}
               <div style={{ gridColumn: "1/-1" }}><label style={LABEL}>Observações</label><textarea value={form.obs} onChange={e => setForm(f => ({ ...f, obs: e.target.value }))} placeholder="Anotações adicionais..." style={{ ...INPUT, height: 70, resize: "vertical" }} /></div>
               <div style={{ gridColumn: "1/-1", display: "flex", alignItems: "center", gap: 12, background: "#f8fafc", borderRadius: 10, padding: "14px 16px", border: "1px solid #e2e8f0" }}>
                 <input type="checkbox" id="recorrente" checked={form.recorrente} onChange={e => setForm(f => ({ ...f, recorrente: e.target.checked }))} style={{ width: 18, height: 18, cursor: "pointer" }} />
