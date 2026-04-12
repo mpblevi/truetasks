@@ -347,13 +347,13 @@ function LoginScreen({ onLogin }) {
 // ─── PAINEL CLIENTES ───────────────────────────────────────────────────────
 function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
   const [modalNovo, setModalNovo] = useState(false);
-  const [form, setForm] = useState({ nome: "", cnpj: "", responsavel_id: "" });
+  const [form, setForm] = useState({ nome: "", cnpj: "", codigo: "", responsavel_id: "" });
   const [loading, setLoading] = useState(false); const [erro, setErro] = useState(""); const [msg, setMsg] = useState(""); const [busca, setBusca] = useState("");
   async function criarCliente() {
     if (!form.nome.trim()) { setErro("Informe o nome."); return; }
     setLoading(true);
-    await supabase.from("clientes").insert({ nome: form.nome.trim(), cnpj: form.cnpj.trim(), responsavel_id: form.responsavel_id || null });
-    setMsg(`Cliente "${form.nome}" criado!`); setForm({ nome: "", cnpj: "", responsavel_id: "" }); setModalNovo(false); onAtualizar(); setLoading(false);
+    await supabase.from("clientes").insert({ nome: form.nome.trim(), cnpj: form.cnpj.trim(), codigo: form.codigo.trim(), responsavel_id: form.responsavel_id || null });
+    setMsg(`Cliente "${form.nome}" criado!`); setForm({ nome: "", cnpj: "", codigo: "", responsavel_id: "" }); setModalNovo(false); onAtualizar(); setLoading(false);
   }
   async function excluirCliente(id, nome) {
     if (!window.confirm(`Remover "${nome}"?`)) return;
@@ -373,7 +373,7 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
           {filtrados.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Nenhum cliente cadastrado.</div>}
           {filtrados.map(c => { const resp = profiles.find(p => p.id === c.responsavel_id); return (
             <div key={c.id} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div><div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{c.nome}</div><div style={{ fontSize: 12, color: "#64748b", marginTop: 2, display: "flex", gap: 12 }}>{c.cnpj && <span style={{ fontFamily: "monospace" }}>{c.cnpj}</span>}{resp && <span>Resp: {resp.nome}</span>}</div></div>
+              <div><div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{c.nome}</div><div style={{ fontSize: 12, color: "#64748b", marginTop: 2, display: "flex", gap: 12 }}>{c.codigo && <span style={{ background: "#dbeafe", color: "#1d4ed8", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>#{c.codigo}</span>}{c.cnpj && <span style={{ fontFamily: "monospace" }}>{c.cnpj}</span>}{resp && <span>Resp: {resp.nome}</span>}</div></div>
               <button onClick={() => excluirCliente(c.id, c.nome)} style={{ background: "#fee2e2", border: "none", borderRadius: 8, color: "#dc2626", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Remover</button>
             </div>
           ); })}
@@ -386,6 +386,7 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div><label style={LABEL}>Nome *</label><input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Nome do cliente" style={INPUT} /></div>
               <div><label style={LABEL}>CNPJ</label><input value={form.cnpj} onChange={e => setForm(f => ({ ...f, cnpj: e.target.value }))} placeholder="00.000.000/0001-00" style={INPUT} /></div>
+              <div><label style={LABEL}>Código Interno</label><input value={form.codigo} onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))} placeholder="Ex: 2764" style={INPUT} /></div>
               <div><label style={LABEL}>Responsável padrão</label><select value={form.responsavel_id} onChange={e => setForm(f => ({ ...f, responsavel_id: e.target.value }))} style={INPUT}><option value="">Selecione...</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => setModalNovo(false)} style={{ flex: 1, background: "white", border: "1px solid #e2e8f0", borderRadius: 9, color: "#64748b", padding: "10px", fontSize: 14, cursor: "pointer" }}>Cancelar</button>
@@ -474,7 +475,7 @@ function ModalReplicar({ tarefa, clientes, profiles, onFechar, onConcluir }) {
           {clientesFiltrados.map(c => { const sel = selecionados.includes(c.id); const resp = profiles.find(p => p.id === c.responsavel_id); return (
             <div key={c.id} onClick={() => toggleCliente(c.id)} style={{ background: sel ? "#dbeafe" : "#f8fafc", border: `1px solid ${sel ? "#3b82f6" : "#e2e8f0"}`, borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
               <div style={{ width: 20, height: 20, borderRadius: 5, border: `2px solid ${sel ? "#1d4ed8" : "#cbd5e1"}`, background: sel ? "#1d4ed8" : "white", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{sel && <span style={{ color: "white", fontSize: 13, fontWeight: 700 }}>✓</span>}</div>
-              <div><div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{c.nome}</div><div style={{ fontSize: 12, color: "#64748b", display: "flex", gap: 10 }}>{c.cnpj && <span style={{ fontFamily: "monospace" }}>{c.cnpj}</span>}{resp && <span>Resp: {resp.nome}</span>}</div></div>
+              <div><div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{c.nome}</div><div style={{ fontSize: 12, color: "#64748b", display: "flex", gap: 10 }}>{c.codigo && <span style={{ background: "#dbeafe", color: "#1d4ed8", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>#{c.codigo}</span>}{c.cnpj && <span style={{ fontFamily: "monospace" }}>{c.cnpj}</span>}{resp && <span>Resp: {resp.nome}</span>}</div></div>
             </div>
           ); })}
         </div>
@@ -499,7 +500,7 @@ export default function App() {
   const [esconderFinalizados, setEsconderFinalizados] = useState(false);
 
   // Filtros por coluna
-  const [fCliente, setFCliente] = useState("Todos"); const [fCnpj, setFCnpj] = useState("Todos");
+  const [fCliente, setFCliente] = useState("Todos"); const [fCodigo, setFCodigo] = useState("Todos"); const [fCnpj, setFCnpj] = useState("Todos");
   const [fComp, setFComp] = useState("Todos"); const [fTipo, setFTipo] = useState("Todos");
   const [fPrazoInt, setFPrazoInt] = useState(""); const [fPrazoLeg, setFPrazoLeg] = useState("");
   const [fResp, setFResp] = useState("Todos"); const [fRevisor, setFRevisor] = useState("Todos");
@@ -509,6 +510,7 @@ export default function App() {
   // Colunas: ordem e largura
   const COL_DEFS = [
     { key: "cliente", label: "Cliente", w: 160 },
+    { key: "codigo", label: "Código", w: 80 },
     { key: "cnpj", label: "CNPJ", w: 130 },
     { key: "competencia", label: "Competência", w: 110 },
     { key: "tipo", label: "Tipo", w: 110 },
@@ -524,7 +526,7 @@ export default function App() {
   const [colOrder, setColOrder] = useState(COL_DEFS.map(c => c.key));
   const [colWidths, setColWidths] = useState(Object.fromEntries(COL_DEFS.map(c => [c.key, c.w])));
 
-  const [modal, setModal] = useState(false); const [editando, setEditando] = useState(null);
+  const [relatorio, setRelatorio] = useState(false); const [modal, setModal] = useState(false); const [editando, setEditando] = useState(null);
   const [detalhes, setDetalhes] = useState(null);
   const [painelUsuarios, setPainelUsuarios] = useState(false); const [painelClientes, setPainelClientes] = useState(false);
   const [modalReplicar, setModalReplicar] = useState(null); const [modalAcao, setModalAcao] = useState(null);
@@ -589,7 +591,7 @@ export default function App() {
     const clienteObj = clientes.find(c => c.id === parseInt(form.cliente_id));
     const respNome = profiles.find(p => p.id === form.responsavel_id)?.nome || "";
     const revNome = profiles.find(p => p.id === form.revisor_id)?.nome || "";
-    const payload = { cliente: clienteObj?.nome || "", cnpj_cliente: clienteObj?.cnpj || "", tipo: form.tipo, competencia: form.competencia, prazo_interno: form.prazo_interno, prazo_legal: form.prazo_legal, prazo: form.prazo_interno, responsavel_id: form.responsavel_id, responsavel_nome: respNome, revisor_id: form.revisor_id || null, revisor_nome: revNome, participantes: form.participantes, status: form.status, obs: form.obs, recorrente: form.recorrente, criado_por: user.id };
+    const payload = { cliente: clienteObj?.nome || "", cnpj_cliente: clienteObj?.cnpj || "", codigo_cliente: clienteObj?.codigo || "", tipo: form.tipo, competencia: form.competencia, prazo_interno: form.prazo_interno, prazo_legal: form.prazo_legal, prazo: form.prazo_interno, responsavel_id: form.responsavel_id, responsavel_nome: respNome, revisor_id: form.revisor_id || null, revisor_nome: revNome, participantes: form.participantes, status: form.status, obs: form.obs, recorrente: form.recorrente, criado_por: user.id };
     if (editando) { await supabase.from("tarefas").update(payload).eq("id", editando); } else { await supabase.from("tarefas").insert(payload); }
     await carregarTarefas(); setModal(false); setFormLoading(false);
   }
@@ -602,7 +604,7 @@ export default function App() {
     setGerandoRecorrentes(true); setMsgRecorrente("");
     const recorrentes = tarefas.filter(t => t.recorrente);
     if (recorrentes.length === 0) { setMsgRecorrente("Nenhuma tarefa recorrente."); setGerandoRecorrentes(false); return; }
-    const novas = recorrentes.map(t => ({ cliente: t.cliente, cnpj_cliente: t.cnpj_cliente, tipo: t.tipo, competencia: addMonthsComp(t.competencia, 1), prazo_interno: addMonths(t.prazo_interno, 1), prazo_legal: addMonths(t.prazo_legal, 1), prazo: addMonths(t.prazo_interno, 1), responsavel_id: t.responsavel_id, responsavel_nome: t.responsavel_nome, revisor_id: t.revisor_id, revisor_nome: t.revisor_nome, participantes: t.participantes, status: "Pendente", obs: t.obs, recorrente: true, criado_por: t.criado_por }));
+    const novas = recorrentes.map(t => ({ cliente: t.cliente, cnpj_cliente: t.cnpj_cliente, codigo_cliente: t.codigo_cliente, tipo: t.tipo, competencia: addMonthsComp(t.competencia, 1), prazo_interno: addMonths(t.prazo_interno, 1), prazo_legal: addMonths(t.prazo_legal, 1), prazo: addMonths(t.prazo_interno, 1), responsavel_id: t.responsavel_id, responsavel_nome: t.responsavel_nome, revisor_id: t.revisor_id, revisor_nome: t.revisor_nome, participantes: t.participantes, status: "Pendente", obs: t.obs, recorrente: true, criado_por: t.criado_por }));
     await supabase.from("tarefas").insert(novas); await carregarTarefas();
     setMsgRecorrente(`${novas.length} tarefa(s) gerada(s)!`); setGerandoRecorrentes(false);
   }
@@ -619,6 +621,7 @@ export default function App() {
 
   const filtradas = useMemo(() => tarefasEnriquecidas.filter(t => {
     if (fCliente !== "Todos" && t.cliente !== fCliente) return false;
+    if (fCodigo !== "Todos" && t.codigo_cliente !== fCodigo) return false;
     if (fCnpj !== "Todos" && t.cnpj_cliente !== fCnpj) return false;
     if (fComp !== "Todos" && t.competencia !== fComp) return false;
     if (fTipo !== "Todos" && t.tipo !== fTipo) return false;
@@ -657,6 +660,7 @@ export default function App() {
     const podeEditar = isAdmin || t.responsavel_id === user.id;
     switch (key) {
       case "cliente": return <span style={{ fontWeight: 600, fontSize: 13, color: "#1e293b" }}>{t.cliente}</span>;
+      case "codigo": return <span style={{ background: "#dbeafe", color: "#1d4ed8", borderRadius: 5, padding: "2px 7px", fontSize: 11, fontWeight: 700 }}>{t.codigo_cliente || "—"}</span>;
       case "cnpj": return <span style={{ fontSize: 11, color: "#64748b", fontFamily: "monospace" }}>{t.cnpj_cliente || "—"}</span>;
       case "competencia": return t.competencia ? <span style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", fontSize: 11, color: "#475569", fontWeight: 600 }}>{t.competencia}</span> : <span style={{ color: "#94a3b8" }}>—</span>;
       case "tipo": return <span style={{ background: "#dbeafe", borderRadius: 6, padding: "2px 8px", fontSize: 11, color: "#1d4ed8", fontWeight: 600 }}>{t.tipo}</span>;
@@ -679,6 +683,7 @@ export default function App() {
     const uniqOpts = (arr) => arr;
     switch (key) {
       case "cliente": return <select value={fCliente} onChange={e => setFCliente(e.target.value)} style={{ ...smStyle, color: fCliente !== "Todos" ? "#1a56db" : "#94a3b8" }}><option value="Todos">(Todos)</option>{uniq(tarefasEnriquecidas.map(t => t.cliente)).slice(1).map(o => <option key={o}>{o}</option>)}</select>;
+      case "codigo": return <select value={fCodigo} onChange={e => setFCodigo(e.target.value)} style={{ ...smStyle, color: fCodigo !== "Todos" ? "#1a56db" : "#94a3b8" }}><option value="Todos">(Todos)</option>{uniq(tarefasEnriquecidas.map(t => t.codigo_cliente)).slice(1).map(o => <option key={o}>{o}</option>)}</select>;
       case "cnpj": return <select value={fCnpj} onChange={e => setFCnpj(e.target.value)} style={{ ...smStyle, color: fCnpj !== "Todos" ? "#1a56db" : "#94a3b8" }}><option value="Todos">(Todos)</option>{uniq(tarefasEnriquecidas.map(t => t.cnpj_cliente)).slice(1).map(o => <option key={o}>{o}</option>)}</select>;
       case "competencia": return <select value={fComp} onChange={e => setFComp(e.target.value)} style={{ ...smStyle, color: fComp !== "Todos" ? "#1a56db" : "#94a3b8" }}><option value="Todos">(Todos)</option>{uniq(tarefasEnriquecidas.map(t => t.competencia)).slice(1).map(o => <option key={o}>{o}</option>)}</select>;
       case "tipo": return <select value={fTipo} onChange={e => setFTipo(e.target.value)} style={{ ...smStyle, color: fTipo !== "Todos" ? "#1a56db" : "#94a3b8" }}><option value="Todos">(Todos)</option>{TIPOS.map(o => <option key={o}>{o}</option>)}</select>;
@@ -712,6 +717,21 @@ export default function App() {
       {painelClientes && <PainelClientes clientes={clientes} profiles={profiles} onAtualizar={carregarClientes} onFechar={() => setPainelClientes(false)} />}
       {modalReplicar && <ModalReplicar tarefa={modalReplicar} clientes={clientes} profiles={profiles} onFechar={() => setModalReplicar(null)} onConcluir={async (n) => { setModalReplicar(null); await carregarTarefas(); setMsgReplicar(`${n} tarefa(s) replicada(s)!`); setTimeout(() => setMsgReplicar(""), 4000); }} />}
       {modalAcao && <ModalAcao tipo={modalAcao.tipo} tarefa={modalAcao.tarefa} profiles={profiles} onFechar={() => setModalAcao(null)} onSalvar={async () => { setModalAcao(null); await carregarTarefas(); }} />}
+
+      {/* MODAL RELATÓRIO */}
+      {relatorio && (() => {
+        const total = tarefasEnriquecidas.length;
+        const porStatus = STATUS_LIST.reduce((acc, s) => { acc[s] = tarefasEnriquecidas.filter(t => t.status === s).length; return acc; }, {});
+        const porSituacao = SITUACAO_LIST.reduce((acc, s) => { acc[s] = tarefasEnriquecidas.filter(t => t.situacaoCalc === s).length; return acc; }, {});
+        const porResp = profiles.map(p => ({ nome: p.nome, total: tarefasEnriquecidas.filter(t => t.responsavel_nome === p.nome).length, fin: tarefasEnriquecidas.filter(t => t.responsavel_nome === p.nome && t.status === "Finalizado").length })).filter(p => p.total > 0).sort((a,b) => b.total - a.total);
+        const porComp = [...new Set(tarefasEnriquecidas.map(t => t.competencia).filter(Boolean))].sort().reverse().slice(0,6).map(c => ({ comp: c, total: tarefasEnriquecidas.filter(t => t.competencia === c).length, fin: tarefasEnriquecidas.filter(t => t.competencia === c && t.status === "Finalizado").length }));
+        const fin = tarefasEnriquecidas.filter(t => t.status === "Finalizado").length;
+        const pct = total > 0 ? Math.round((fin/total)*100) : 0;
+        const BAR = { "Aguardando Cliente":"#f97316","Em Elaboração":"#3b82f6","Enviado por Email":"#22c55e","Finalizado":"#16a34a","Pendente":"#eab308","Revisão":"#a855f7" };
+        const SIT = { "No Prazo":"#22c55e","A Vencer":"#eab308","Vencido Internamente":"#f97316","Vencido Legalmente":"#ef4444","Finalizado no Prazo":"#16a34a","Finalizado no Vencimento Legal":"#ca8a04","Finalizado em Atraso":"#dc2626" };
+        function Bars({ items, colors, tot }) { return <div style={{ display:"flex",flexDirection:"column",gap:8 }}>{items.filter(([,v])=>v>0).map(([lb,v])=><div key={lb}><div style={{ display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3 }}><span style={{ color:"#475569" }}>{lb}</span><span style={{ fontWeight:700 }}>{v} <span style={{ color:"#94a3b8",fontWeight:400 }}>({tot>0?Math.round(v/tot*100):0}%)</span></span></div><div style={{ background:"#f1f5f9",borderRadius:4,height:8,overflow:"hidden" }}><div style={{ background:colors[lb]||"#3b82f6",width:`${tot>0?(v/tot*100):0}%`,height:"100%",borderRadius:4 }} /></div></div>)}</div>; }
+        return <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:20 }}><div style={{ background:"white",borderRadius:16,padding:32,width:"100%",maxWidth:780,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.15)" }}><div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:24 }}><div style={{ fontFamily:"'Plus Jakarta Sans', sans-serif",fontSize:20,fontWeight:800,color:"#1a56db" }}>📊 Relatório de Progresso</div><button onClick={()=>setRelatorio(false)} style={{ background:"none",border:"none",color:"#94a3b8",fontSize:24,cursor:"pointer" }}>×</button></div><div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:24 }}>{[{l:"Total",v:total,c:"#1a56db"},{l:"Finalizadas",v:fin,c:"#16a34a"},{l:"Em Aberto",v:total-fin,c:"#f97316"},{l:"% Concluído",v:pct+"%",c:"#a855f7"}].map(x=><div key={x.l} style={{ background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"16px 20px",textAlign:"center" }}><div style={{ fontSize:26,fontWeight:800,color:x.c,fontFamily:"'Plus Jakarta Sans', sans-serif" }}>{x.v}</div><div style={{ fontSize:11,color:"#94a3b8",marginTop:4,fontWeight:600 }}>{x.l.toUpperCase()}</div></div>)}</div><div style={{ background:"#f8fafc",borderRadius:12,padding:"14px 20px",marginBottom:20,border:"1px solid #e2e8f0" }}><div style={{ display:"flex",justifyContent:"space-between",marginBottom:8 }}><span style={{ fontSize:13,fontWeight:600,color:"#475569" }}>Progresso Geral</span><span style={{ fontSize:13,fontWeight:700,color:"#1a56db" }}>{pct}%</span></div><div style={{ background:"#e2e8f0",borderRadius:6,height:12,overflow:"hidden" }}><div style={{ background:"linear-gradient(90deg,#1a56db,#0ea5e9)",width:`${pct}%`,height:"100%",borderRadius:6 }} /></div></div><div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:20 }}><div style={{ background:"#f8fafc",borderRadius:12,padding:"16px 20px",border:"1px solid #e2e8f0" }}><div style={{ fontSize:13,fontWeight:700,color:"#1e293b",marginBottom:14 }}>Por Status</div><Bars items={Object.entries(porStatus)} colors={BAR} tot={total} /></div><div style={{ background:"#f8fafc",borderRadius:12,padding:"16px 20px",border:"1px solid #e2e8f0" }}><div style={{ fontSize:13,fontWeight:700,color:"#1e293b",marginBottom:14 }}>Por Situação</div><Bars items={Object.entries(porSituacao)} colors={SIT} tot={total} /></div><div style={{ background:"#f8fafc",borderRadius:12,padding:"16px 20px",border:"1px solid #e2e8f0" }}><div style={{ fontSize:13,fontWeight:700,color:"#1e293b",marginBottom:14 }}>Por Responsável</div><div style={{ display:"flex",flexDirection:"column",gap:8 }}>{porResp.map(p=><div key={p.nome}><div style={{ display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3 }}><span style={{ color:"#475569" }}>{p.nome}</span><span style={{ fontWeight:700 }}>{p.fin}/{p.total}</span></div><div style={{ background:"#e2e8f0",borderRadius:4,height:8,overflow:"hidden" }}><div style={{ background:"#1a56db",width:`${p.total>0?(p.fin/p.total*100):0}%`,height:"100%",borderRadius:4 }} /></div></div>)}{porResp.length===0&&<div style={{ color:"#94a3b8",fontSize:13 }}>Nenhum dado.</div>}</div></div><div style={{ background:"#f8fafc",borderRadius:12,padding:"16px 20px",border:"1px solid #e2e8f0" }}><div style={{ fontSize:13,fontWeight:700,color:"#1e293b",marginBottom:14 }}>Por Competência (últimas 6)</div><div style={{ display:"flex",flexDirection:"column",gap:8 }}>{porComp.map(c=><div key={c.comp}><div style={{ display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3 }}><span style={{ color:"#475569",fontWeight:600 }}>{c.comp}</span><span style={{ fontWeight:700 }}>{c.fin}/{c.total}</span></div><div style={{ background:"#e2e8f0",borderRadius:4,height:8,overflow:"hidden" }}><div style={{ background:"#0ea5e9",width:`${c.total>0?(c.fin/c.total*100):0}%`,height:"100%",borderRadius:4 }} /></div></div>)}{porComp.length===0&&<div style={{ color:"#94a3b8",fontSize:13 }}>Nenhum dado.</div>}</div></div></div></div></div>;
+      })()}
 
       {/* HEADER */}
       <div style={{ background: "#1a56db", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
@@ -747,10 +767,12 @@ export default function App() {
             </button>
           ))}
           <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            {(() => { const n = [fCliente,fCodigo,fCnpj,fComp,fTipo,fResp,fRevisor,fStatus,fSituacao].filter(f=>f!=="Todos").length + (fPrazoInt?1:0) + (fPrazoLeg?1:0) + (fPart?1:0); return n > 0 ? <button onClick={() => { setFCliente("Todos"); setFCodigo("Todos"); setFCnpj("Todos"); setFComp("Todos"); setFTipo("Todos"); setFPrazoInt(""); setFPrazoLeg(""); setFResp("Todos"); setFRevisor("Todos"); setFPart(""); setFStatus("Todos"); setFSituacao("Todos"); }} style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 8, color: "#dc2626", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>✕ {n} filtro(s) ativo(s)</button> : null; })()}
             <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", cursor: "pointer" }}>
               <input type="checkbox" checked={esconderFinalizados} onChange={e => setEsconderFinalizados(e.target.checked)} style={{ width: 15, height: 15 }} />
               Esconder finalizados
             </label>
+            {isAdmin && <button onClick={() => setRelatorio(true)} style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, color: "#1d4ed8", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>📊 Relatório</button>}
             {isAdmin && <GerenciarAcoes selecionados={selecionados} tarefas={tarefasEnriquecidas} profiles={profiles} onAtualizar={carregarTarefas} onLimpar={() => setSelecionados([])} />}
             <button onClick={exportarExcel} style={{ background: "#f0fdf4", border: "1px solid #22c55e", borderRadius: 8, color: "#15803d", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Exportar Excel</button>
           </div>
