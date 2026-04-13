@@ -810,7 +810,7 @@ export default function App() {
 
         {/* TABELA */}
         <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "auto" }}>
-          <table style={{ borderCollapse: "collapse", tableLayout: "fixed", width: colOrder.reduce((sum, k) => sum + (colWidths[k] || 120), 40) + "px" }}>
+          <table style={{ borderCollapse: "collapse", tableLayout: "fixed", width: "100%" }}>
             <colgroup>
               <col style={{ width: 40 }} />
               {cols.map(c => <col key={c.key} style={{ width: colWidths[c.key] || c.w }} />)}
