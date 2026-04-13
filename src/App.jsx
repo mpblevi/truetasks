@@ -101,7 +101,7 @@ function Logo({ size = 24, dark = false }) {
     <div style={{ display: "flex", alignItems: "center", gap: dark ? 6 : 0 }}>
       {dark && <img src={LOGO_LOGIN} alt="TrueTasks" style={{ width: logoSize, height: logoSize, objectFit: "contain" }} />}
       <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: size, fontWeight: 800, letterSpacing: -0.5 }}>
-        <span style={{ color: dark ? "#272e40" : "white" }}>True</span>
+        <span style={{ color: dark ? "#024aab" : "white" }}>True</span>
         <span style={{ color: dark ? "#83a9dc" : "#93c5fd" }}>Tasks</span>
       </span>
     </div>
