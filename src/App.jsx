@@ -97,10 +97,10 @@ const LOGO_HEADER = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfsAAAISCAYAA
 
 function Logo({ size = 24, dark = false }) {
   const logoSrc = dark ? LOGO_LOGIN : LOGO_HEADER;
-  const logoSize = size * 1.6;
+  const logoSize = size * 1.1;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <img src={logoSrc} alt="TrueTasks" style={{ width: logoSize, height: logoSize, objectFit: "contain", filter: dark ? "none" : "brightness(10) saturate(0)" }} />
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <img src={logoSrc} alt="TrueTasks" style={{ width: logoSize, height: logoSize, objectFit: "contain", filter: dark ? "none" : "brightness(0) invert(1) sepia(0) saturate(0)" }} />
       <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: size, fontWeight: 800, letterSpacing: -0.5 }}>
         <span style={{ color: dark ? "#024aab" : "white" }}>True</span>
         <span style={{ color: dark ? "#83a9dc" : "#93c5fd" }}>Tasks</span>
