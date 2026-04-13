@@ -101,7 +101,7 @@ function Logo({ size = 24, dark = false }) {
     <div style={{ display: "flex", alignItems: "center", gap: dark ? 6 : 0 }}>
       {dark && <img src={LOGO_LOGIN} alt="TrueTasks" style={{ width: logoSize, height: logoSize, objectFit: "contain" }} />}
       <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: size, fontWeight: 800, letterSpacing: -0.5 }}>
-        <span style={{ color: dark ? "#024aab" : "white" }}>True</span>
+        <span style={{ color: dark ? "#272e40" : "white" }}>True</span>
         <span style={{ color: dark ? "#83a9dc" : "#93c5fd" }}>Tasks</span>
       </span>
     </div>
@@ -367,20 +367,40 @@ function LoginScreen({ onLogin }) {
 
 // ─── PAINEL CLIENTES ───────────────────────────────────────────────────────
 function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
+  const formVazio = { nome: "", cnpj: "", codigo: "", responsavel_id: "", cliente_desde: "" };
   const [modalNovo, setModalNovo] = useState(false);
-  const [form, setForm] = useState({ nome: "", cnpj: "", codigo: "", responsavel_id: "" });
-  const [loading, setLoading] = useState(false); const [erro, setErro] = useState(""); const [msg, setMsg] = useState(""); const [busca, setBusca] = useState("");
-  async function criarCliente() {
+  const [editandoId, setEditandoId] = useState(null);
+  const [form, setForm] = useState(formVazio);
+  const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState(""); const [msg, setMsg] = useState(""); const [busca, setBusca] = useState("");
+
+  function abrirEditar(c) {
+    setEditandoId(c.id);
+    setForm({ nome: c.nome, cnpj: c.cnpj || "", codigo: c.codigo || "", responsavel_id: c.responsavel_id || "", cliente_desde: c.cliente_desde || "" });
+    setModalNovo(true); setErro("");
+  }
+
+  async function salvarCliente() {
     if (!form.nome.trim()) { setErro("Informe o nome."); return; }
     setLoading(true);
-    await supabase.from("clientes").insert({ nome: form.nome.trim(), cnpj: form.cnpj.trim(), codigo: form.codigo.trim(), responsavel_id: form.responsavel_id || null });
-    setMsg(`Cliente "${form.nome}" criado!`); setForm({ nome: "", cnpj: "", codigo: "", responsavel_id: "" }); setModalNovo(false); onAtualizar(); setLoading(false);
+    const payload = { nome: form.nome.trim(), cnpj: form.cnpj.trim(), codigo: form.codigo.trim(), responsavel_id: form.responsavel_id || null, cliente_desde: form.cliente_desde || null };
+    if (editandoId) {
+      await supabase.from("clientes").update(payload).eq("id", editandoId);
+      setMsg(`Cliente "${form.nome}" atualizado!`);
+    } else {
+      await supabase.from("clientes").insert(payload);
+      setMsg(`Cliente "${form.nome}" criado!`);
+    }
+    setForm(formVazio); setEditandoId(null); setModalNovo(false); onAtualizar(); setLoading(false);
   }
+
   async function excluirCliente(id, nome) {
     if (!window.confirm(`Remover "${nome}"?`)) return;
     await supabase.from("clientes").delete().eq("id", id); onAtualizar();
   }
+
   const filtrados = clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase()) || (c.cnpj || "").includes(busca));
+
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
       <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 640, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
@@ -394,24 +414,36 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
           {filtrados.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Nenhum cliente cadastrado.</div>}
           {filtrados.map(c => { const resp = profiles.find(p => p.id === c.responsavel_id); return (
             <div key={c.id} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div><div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{c.nome}</div><div style={{ fontSize: 12, color: "#64748b", marginTop: 2, display: "flex", gap: 12 }}>{c.codigo && <span style={{ background: "#dce8f7", color: "#024aab", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>#{c.codigo}</span>}{c.cnpj && <span style={{ fontFamily: "monospace" }}>{c.cnpj}</span>}{resp && <span>Resp: {resp.nome}</span>}</div></div>
-              <button onClick={() => excluirCliente(c.id, c.nome)} style={{ background: "#fee2e2", border: "none", borderRadius: 8, color: "#dc2626", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Remover</button>
+              <div>
+                <div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{c.nome}</div>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  {c.codigo && <span style={{ background: "#dce8f7", color: "#024aab", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>#{c.codigo}</span>}
+                  {c.cnpj && <span style={{ fontFamily: "monospace" }}>{c.cnpj}</span>}
+                  {resp && <span>Resp: {resp.nome}</span>}
+                  {c.cliente_desde && <span>Cliente desde: {c.cliente_desde.split("-").reverse().join("/")}</span>}
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                <button onClick={() => abrirEditar(c)} style={{ background: "#dce8f7", border: "none", borderRadius: 8, color: "#024aab", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Editar</button>
+                <button onClick={() => excluirCliente(c.id, c.nome)} style={{ background: "#fee2e2", border: "none", borderRadius: 8, color: "#dc2626", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Remover</button>
+              </div>
             </div>
           ); })}
         </div>
-        <button onClick={() => { setModalNovo(true); setErro(""); setMsg(""); }} style={{ ...BTN_PRIMARY }}>+ Adicionar Novo Cliente</button>
+        <button onClick={() => { setModalNovo(true); setEditandoId(null); setForm(formVazio); setErro(""); setMsg(""); }} style={{ ...BTN_PRIMARY }}>+ Adicionar Novo Cliente</button>
         {modalNovo && (
           <div style={{ marginTop: 24, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20 }}>
-            <div style={{ fontWeight: 700, color: "#024aab", marginBottom: 16 }}>Novo Cliente</div>
+            <div style={{ fontWeight: 700, color: "#024aab", marginBottom: 16 }}>{editandoId ? "Editar Cliente" : "Novo Cliente"}</div>
             {erro && <div style={{ background: "#fee2e2", borderRadius: 8, padding: "8px 12px", color: "#dc2626", fontSize: 13, marginBottom: 12 }}>{erro}</div>}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div><label style={LABEL}>Nome *</label><input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Nome do cliente" style={INPUT} /></div>
               <div><label style={LABEL}>CNPJ</label><input value={form.cnpj} onChange={e => setForm(f => ({ ...f, cnpj: e.target.value }))} placeholder="00.000.000/0001-00" style={INPUT} /></div>
               <div><label style={LABEL}>Código Interno</label><input value={form.codigo} onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))} placeholder="Ex: 2764" style={INPUT} /></div>
               <div><label style={LABEL}>Responsável padrão</label><select value={form.responsavel_id} onChange={e => setForm(f => ({ ...f, responsavel_id: e.target.value }))} style={INPUT}><option value="">Selecione...</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
+              <div><label style={LABEL}>Cliente desde</label><input type="date" value={form.cliente_desde} onChange={e => setForm(f => ({ ...f, cliente_desde: e.target.value }))} style={INPUT} /></div>
               <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={() => setModalNovo(false)} style={{ flex: 1, background: "white", border: "1px solid #e2e8f0", borderRadius: 9, color: "#64748b", padding: "10px", fontSize: 14, cursor: "pointer" }}>Cancelar</button>
-                <button onClick={criarCliente} disabled={loading} style={{ ...BTN_PRIMARY, flex: 2, width: "auto", opacity: loading ? 0.7 : 1 }}>{loading ? "Salvando..." : "Criar Cliente"}</button>
+                <button onClick={() => { setModalNovo(false); setEditandoId(null); }} style={{ flex: 1, background: "white", border: "1px solid #e2e8f0", borderRadius: 9, color: "#64748b", padding: "10px", fontSize: 14, cursor: "pointer" }}>Cancelar</button>
+                <button onClick={salvarCliente} disabled={loading} style={{ ...BTN_PRIMARY, flex: 2, width: "auto", opacity: loading ? 0.7 : 1 }}>{loading ? "Salvando..." : editandoId ? "Salvar Alterações" : "Criar Cliente"}</button>
               </div>
             </div>
           </div>
