@@ -13,7 +13,7 @@ const SITUACAO_LIST = ["No Prazo", "A Vencer", "Vencido Internamente", "Vencido 
 
 const STATUS_STYLE = {
   "Aguardando Cliente": { bg: "#fff7ed", border: "#f97316", text: "#c2410c" },
-  "Em Elaboração":      { bg: "#eff6ff", border: "#3b82f6", text: "#1d4ed8" },
+  "Em Elaboração":      { bg: "#edf3fb", border: "#3b82f6", text: "#024aab" },
   "Enviado por Email":  { bg: "#f0fdf4", border: "#22c55e", text: "#15803d" },
   "Finalizado":         { bg: "#dcfce7", border: "#16a34a", text: "#14532d" },
   "Pendente":           { bg: "#fef9c3", border: "#eab308", text: "#854d0e" },
@@ -87,7 +87,7 @@ const INPUT = {
 };
 const LABEL = { fontSize: 12, color: "#475569", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6, display: "block" };
 const BTN_PRIMARY = {
-  background: "linear-gradient(135deg, #1a56db, #1d4ed8)", border: "none",
+  background: "linear-gradient(135deg, #024aab, #024aab)", border: "none",
   borderRadius: 9, color: "#fff", padding: "10px 28px", fontSize: 14,
   fontWeight: 700, cursor: "pointer", fontFamily: "'Lato', sans-serif", width: "100%",
 };
@@ -95,10 +95,10 @@ const BTN_PRIMARY = {
 function Logo({ size = 24, dark = false }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <div style={{ width: size + 8, height: size + 8, background: "linear-gradient(135deg, #1a56db, #0ea5e9)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.7, color: "white", fontWeight: 900 }}>✓</div>
+      <div style={{ width: size + 8, height: size + 8, background: "linear-gradient(135deg, #024aab, #83a9dc)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.7, color: "white", fontWeight: 900 }}>✓</div>
       <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: size, fontWeight: 800, letterSpacing: -0.5 }}>
-        <span style={{ color: dark ? "#1a56db" : "white" }}>True</span>
-        <span style={{ color: "#0ea5e9" }}>Tasks</span>
+        <span style={{ color: dark ? "#024aab" : "white" }}>True</span>
+        <span style={{ color: "#83a9dc" }}>Tasks</span>
       </span>
     </div>
   );
@@ -161,7 +161,7 @@ function GerenciarAcoes({ selecionados, tarefas, profiles, onAtualizar, onLimpar
     <>
       <div ref={ref} style={{ position: "relative" }}>
         <button onClick={() => setAberto(!aberto)}
-          style={{ background: "#1a56db", border: "none", borderRadius: 8, color: "white", padding: "7px 16px", fontSize: 13, cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+          style={{ background: "#024aab", border: "none", borderRadius: 8, color: "white", padding: "7px 16px", fontSize: 13, cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
           Gerenciar Ações ({selecionados.length}) <span style={{ fontSize: 10 }}>{aberto ? "▲" : "▼"}</span>
         </button>
         {aberto && (
@@ -205,10 +205,10 @@ function ModalAcaoLote({ tipo, count, profiles, onFechar, onSalvar }) {
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 600, padding: 20 }}>
       <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 440, boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 17, fontWeight: 800, color: "#1a56db" }}>{cfg.titulo}</div>
+          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 17, fontWeight: 800, color: "#024aab" }}>{cfg.titulo}</div>
           <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>
         </div>
-        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>Aplicar para <strong style={{ color: "#1a56db" }}>{count} tarefa(s)</strong></div>
+        <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>Aplicar para <strong style={{ color: "#024aab" }}>{count} tarefa(s)</strong></div>
         {cfg.tipo === "select_profile" && <div><label style={LABEL}>Selecione</label><select value={valor} onChange={e => setValor(e.target.value)} style={INPUT}><option value="">Selecione...</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>}
         {cfg.tipo === "select_status" && <div><label style={LABEL}>Novo Status</label><select value={valor} onChange={e => setValor(e.target.value)} style={INPUT}><option value="">Selecione...</option>{STATUS_LIST.map(s => <option key={s}>{s}</option>)}</select></div>}
         {cfg.tipo === "date_duplo" && <div style={{ display: "flex", flexDirection: "column", gap: 12 }}><div><label style={LABEL}>Prazo Interno</label><input type="date" value={valor} onChange={e => setValor(e.target.value)} style={INPUT} /></div><div><label style={LABEL}>Prazo Legal</label><input type="date" value={valor2} onChange={e => setValor2(e.target.value)} style={INPUT} /></div></div>}
@@ -312,7 +312,7 @@ function ModalAcao({ tipo, tarefa, profiles, onFechar, onSalvar }) {
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 400, padding: 20 }}>
       <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 440, boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 17, fontWeight: 800, color: "#1a56db" }}>{cfg.titulo}</div>
+          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 17, fontWeight: 800, color: "#024aab" }}>{cfg.titulo}</div>
           <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>
         </div>
         <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>Tarefa: <strong style={{ color: "#1e293b" }}>{tarefa.cliente} — {tarefa.tipo}</strong></div>
@@ -381,7 +381,7 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
       <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 640, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#1a56db" }}>Gerenciar Clientes</div>
+          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#024aab" }}>Gerenciar Clientes</div>
           <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>
         </div>
         {msg && <div style={{ background: "#dcfce7", border: "1px solid #22c55e", borderRadius: 8, padding: "10px 14px", color: "#15803d", fontSize: 13, marginBottom: 16 }}>{msg}</div>}
@@ -390,7 +390,7 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
           {filtrados.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Nenhum cliente cadastrado.</div>}
           {filtrados.map(c => { const resp = profiles.find(p => p.id === c.responsavel_id); return (
             <div key={c.id} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div><div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{c.nome}</div><div style={{ fontSize: 12, color: "#64748b", marginTop: 2, display: "flex", gap: 12 }}>{c.codigo && <span style={{ background: "#dbeafe", color: "#1d4ed8", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>#{c.codigo}</span>}{c.cnpj && <span style={{ fontFamily: "monospace" }}>{c.cnpj}</span>}{resp && <span>Resp: {resp.nome}</span>}</div></div>
+              <div><div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{c.nome}</div><div style={{ fontSize: 12, color: "#64748b", marginTop: 2, display: "flex", gap: 12 }}>{c.codigo && <span style={{ background: "#dce8f7", color: "#024aab", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>#{c.codigo}</span>}{c.cnpj && <span style={{ fontFamily: "monospace" }}>{c.cnpj}</span>}{resp && <span>Resp: {resp.nome}</span>}</div></div>
               <button onClick={() => excluirCliente(c.id, c.nome)} style={{ background: "#fee2e2", border: "none", borderRadius: 8, color: "#dc2626", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Remover</button>
             </div>
           ); })}
@@ -398,7 +398,7 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
         <button onClick={() => { setModalNovo(true); setErro(""); setMsg(""); }} style={{ ...BTN_PRIMARY }}>+ Adicionar Novo Cliente</button>
         {modalNovo && (
           <div style={{ marginTop: 24, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20 }}>
-            <div style={{ fontWeight: 700, color: "#1a56db", marginBottom: 16 }}>Novo Cliente</div>
+            <div style={{ fontWeight: 700, color: "#024aab", marginBottom: 16 }}>Novo Cliente</div>
             {erro && <div style={{ background: "#fee2e2", borderRadius: 8, padding: "8px 12px", color: "#dc2626", fontSize: 13, marginBottom: 12 }}>{erro}</div>}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div><label style={LABEL}>Nome *</label><input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Nome do cliente" style={INPUT} /></div>
@@ -436,14 +436,14 @@ function PainelUsuarios({ profiles, onAtualizar, onFechar }) {
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
       <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#1a56db" }}>Gerenciar Usuários</div>
+          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#024aab" }}>Gerenciar Usuários</div>
           <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>
         </div>
         {msg && <div style={{ background: "#dcfce7", border: "1px solid #22c55e", borderRadius: 8, padding: "10px 14px", color: "#15803d", fontSize: 13, marginBottom: 16 }}>{msg}</div>}
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
           {profiles.map(p => (
             <div key={p.id} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div><div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{p.nome}</div><div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>usuário: <span style={{ color: "#1a56db" }}>{p.usuario || "—"}</span><span style={{ marginLeft: 12, color: p.cargo === "admin" ? "#d97706" : "#64748b", textTransform: "uppercase", letterSpacing: 1 }}>{p.cargo === "admin" ? "Admin" : "Colaborador"}</span></div></div>
+              <div><div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{p.nome}</div><div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>usuário: <span style={{ color: "#024aab" }}>{p.usuario || "—"}</span><span style={{ marginLeft: 12, color: p.cargo === "admin" ? "#d97706" : "#64748b", textTransform: "uppercase", letterSpacing: 1 }}>{p.cargo === "admin" ? "Admin" : "Colaborador"}</span></div></div>
               {p.cargo !== "admin" && <button onClick={() => excluirUsuario(p.id, p.nome)} style={{ background: "#fee2e2", border: "none", borderRadius: 8, color: "#dc2626", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Remover</button>}
             </div>
           ))}
@@ -451,7 +451,7 @@ function PainelUsuarios({ profiles, onAtualizar, onFechar }) {
         <button onClick={() => { setModalNovo(true); setErro(""); setMsg(""); }} style={{ ...BTN_PRIMARY }}>+ Adicionar Novo Usuário</button>
         {modalNovo && (
           <div style={{ marginTop: 24, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20 }}>
-            <div style={{ fontWeight: 700, color: "#1a56db", marginBottom: 16 }}>Novo Usuário</div>
+            <div style={{ fontWeight: 700, color: "#024aab", marginBottom: 16 }}>Novo Usuário</div>
             {erro && <div style={{ background: "#fee2e2", borderRadius: 8, padding: "8px 12px", color: "#dc2626", fontSize: 13, marginBottom: 12 }}>{erro}</div>}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div><label style={LABEL}>Nome completo</label><input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Ex: Ana Lima" style={INPUT} /></div>
@@ -483,16 +483,16 @@ function ModalReplicar({ tarefa, clientes, profiles, onFechar, onConcluir }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 20 }}>
       <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.15)" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}><div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#1a56db" }}>Replicar Tarefa</div><button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button></div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}><div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#024aab" }}>Replicar Tarefa</div><button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button></div>
         <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>Replicando: <strong style={{ color: "#1e293b" }}>{tarefa.tipo}</strong> — <strong style={{ color: "#1e293b" }}>{tarefa.competencia || "—"}</strong></div>
         <div style={{ marginBottom: 16 }}><label style={LABEL}>Responsável (opcional)</label><select value={responsavelPadrao} onChange={e => setResponsavelPadrao(e.target.value)} style={INPUT}><option value="">Usar padrão de cada cliente</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
-        <div style={{ display: "flex", gap: 10, marginBottom: 12 }}><input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar cliente..." style={{ ...INPUT, flex: 1 }} /><button onClick={() => setSelecionados(clientesFiltrados.map(c => c.id))} style={{ background: "#dbeafe", border: "none", borderRadius: 8, color: "#1d4ed8", padding: "10px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>Selecionar todos</button></div>
+        <div style={{ display: "flex", gap: 10, marginBottom: 12 }}><input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar cliente..." style={{ ...INPUT, flex: 1 }} /><button onClick={() => setSelecionados(clientesFiltrados.map(c => c.id))} style={{ background: "#dce8f7", border: "none", borderRadius: 8, color: "#024aab", padding: "10px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>Selecionar todos</button></div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 260, overflowY: "auto", marginBottom: 20 }}>
           {clientesFiltrados.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Nenhum outro cliente cadastrado.</div>}
           {clientesFiltrados.map(c => { const sel = selecionados.includes(c.id); const resp = profiles.find(p => p.id === c.responsavel_id); return (
-            <div key={c.id} onClick={() => toggleCliente(c.id)} style={{ background: sel ? "#dbeafe" : "#f8fafc", border: `1px solid ${sel ? "#3b82f6" : "#e2e8f0"}`, borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-              <div style={{ width: 20, height: 20, borderRadius: 5, border: `2px solid ${sel ? "#1d4ed8" : "#cbd5e1"}`, background: sel ? "#1d4ed8" : "white", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{sel && <span style={{ color: "white", fontSize: 13, fontWeight: 700 }}>✓</span>}</div>
-              <div><div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{c.nome}</div><div style={{ fontSize: 12, color: "#64748b", display: "flex", gap: 10 }}>{c.codigo && <span style={{ background: "#dbeafe", color: "#1d4ed8", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>#{c.codigo}</span>}{c.cnpj && <span style={{ fontFamily: "monospace" }}>{c.cnpj}</span>}{resp && <span>Resp: {resp.nome}</span>}</div></div>
+            <div key={c.id} onClick={() => toggleCliente(c.id)} style={{ background: sel ? "#dce8f7" : "#f8fafc", border: `1px solid ${sel ? "#3b82f6" : "#e2e8f0"}`, borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+              <div style={{ width: 20, height: 20, borderRadius: 5, border: `2px solid ${sel ? "#024aab" : "#cbd5e1"}`, background: sel ? "#024aab" : "white", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{sel && <span style={{ color: "white", fontSize: 13, fontWeight: 700 }}>✓</span>}</div>
+              <div><div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{c.nome}</div><div style={{ fontSize: 12, color: "#64748b", display: "flex", gap: 10 }}>{c.codigo && <span style={{ background: "#dce8f7", color: "#024aab", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>#{c.codigo}</span>}{c.cnpj && <span style={{ fontFamily: "monospace" }}>{c.cnpj}</span>}{resp && <span>Resp: {resp.nome}</span>}</div></div>
             </div>
           ); })}
         </div>
@@ -690,10 +690,10 @@ export default function App() {
     const podeEditar = isAdmin || t.responsavel_id === user.id;
     switch (key) {
       case "cliente": return <span style={{ fontWeight: 600, fontSize: 13, color: "#1e293b" }}>{t.cliente}</span>;
-      case "codigo": return <span style={{ background: "#dbeafe", color: "#1d4ed8", borderRadius: 5, padding: "2px 7px", fontSize: 11, fontWeight: 700 }}>{t.codigo_cliente || "—"}</span>;
+      case "codigo": return <span style={{ background: "#dce8f7", color: "#024aab", borderRadius: 5, padding: "2px 7px", fontSize: 11, fontWeight: 700 }}>{t.codigo_cliente || "—"}</span>;
       case "cnpj": return <span style={{ fontSize: 11, color: "#64748b", fontFamily: "monospace" }}>{t.cnpj_cliente || "—"}</span>;
       case "competencia": return t.competencia ? <span style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", fontSize: 11, color: "#475569", fontWeight: 600 }}>{t.competencia}</span> : <span style={{ color: "#94a3b8" }}>—</span>;
-      case "tipo": return <span style={{ background: "#dbeafe", borderRadius: 6, padding: "2px 8px", fontSize: 11, color: "#1d4ed8", fontWeight: 600 }}>{t.tipo}</span>;
+      case "tipo": return <span style={{ background: "#dce8f7", borderRadius: 6, padding: "2px 8px", fontSize: 11, color: "#024aab", fontWeight: 600 }}>{t.tipo}</span>;
       case "prazo_interno": return <span style={{ fontSize: 12, color: iAtrasado ? "#dc2626" : "#475569", fontWeight: iAtrasado ? 700 : 400 }}>{formatDate(t.prazo_interno)}</span>;
       case "prazo_legal": return <span style={{ fontSize: 12, color: lAtrasado ? "#dc2626" : "#94a3b8" }}>{formatDate(t.prazo_legal)}</span>;
       case "responsavel": return <span style={{ fontSize: 12, color: "#64748b" }}>{t.responsavel_nome}</span>;
@@ -712,18 +712,18 @@ export default function App() {
     const inputSmStyle = { ...smStyle, cursor: "text" };
     const uniqOpts = (arr) => arr;
     switch (key) {
-      case "cliente": return <select value={fCliente} onChange={e => setFCliente(e.target.value)} style={{ ...smStyle, color: fCliente !== "Todos" ? "#1a56db" : "#94a3b8" }}><option value="Todos">(Todos)</option>{uniq(tarefasEnriquecidas.map(t => t.cliente)).slice(1).map(o => <option key={o}>{o}</option>)}</select>;
-      case "codigo": return <select value={fCodigo} onChange={e => setFCodigo(e.target.value)} style={{ ...smStyle, color: fCodigo !== "Todos" ? "#1a56db" : "#94a3b8" }}><option value="Todos">(Todos)</option>{uniq(tarefasEnriquecidas.map(t => t.codigo_cliente)).slice(1).map(o => <option key={o}>{o}</option>)}</select>;
-      case "cnpj": return <select value={fCnpj} onChange={e => setFCnpj(e.target.value)} style={{ ...smStyle, color: fCnpj !== "Todos" ? "#1a56db" : "#94a3b8" }}><option value="Todos">(Todos)</option>{uniq(tarefasEnriquecidas.map(t => t.cnpj_cliente)).slice(1).map(o => <option key={o}>{o}</option>)}</select>;
-      case "competencia": return <select value={fComp} onChange={e => setFComp(e.target.value)} style={{ ...smStyle, color: fComp !== "Todos" ? "#1a56db" : "#94a3b8" }}><option value="Todos">(Todos)</option>{uniq(tarefasEnriquecidas.map(t => t.competencia)).slice(1).map(o => <option key={o}>{o}</option>)}</select>;
-      case "tipo": return <select value={fTipo} onChange={e => setFTipo(e.target.value)} style={{ ...smStyle, color: fTipo !== "Todos" ? "#1a56db" : "#94a3b8" }}><option value="Todos">(Todos)</option>{TIPOS.map(o => <option key={o}>{o}</option>)}</select>;
-      case "prazo_interno": return <input value={fPrazoInt} onChange={e => setFPrazoInt(e.target.value)} placeholder="dd/mm/aaaa" maxLength={10} style={{ ...inputSmStyle, color: fPrazoInt ? "#1a56db" : "#94a3b8" }} />;
-      case "prazo_legal": return <input value={fPrazoLeg} onChange={e => setFPrazoLeg(e.target.value)} placeholder="dd/mm/aaaa" maxLength={10} style={{ ...inputSmStyle, color: fPrazoLeg ? "#1a56db" : "#94a3b8" }} />;
-      case "responsavel": return <select value={fResp} onChange={e => setFResp(e.target.value)} style={{ ...smStyle, color: fResp !== "Todos" ? "#1a56db" : "#94a3b8" }}><option value="Todos">(Todos)</option>{uniq(tarefasEnriquecidas.map(t => t.responsavel_nome)).slice(1).map(o => <option key={o}>{o}</option>)}</select>;
-      case "revisor": return <select value={fRevisor} onChange={e => setFRevisor(e.target.value)} style={{ ...smStyle, color: fRevisor !== "Todos" ? "#1a56db" : "#94a3b8" }}><option value="Todos">(Todos)</option>{uniq(tarefasEnriquecidas.map(t => t.revisor_nome)).slice(1).map(o => <option key={o}>{o}</option>)}</select>;
-      case "participantes": return <input value={fPart} onChange={e => setFPart(e.target.value)} placeholder="Buscar..." style={{ ...inputSmStyle, color: fPart ? "#1a56db" : "#94a3b8" }} />;
-      case "status": return <select value={fStatus} onChange={e => setFStatus(e.target.value)} style={{ ...smStyle, color: fStatus !== "Todos" ? "#1a56db" : "#94a3b8" }}><option value="Todos">(Todos)</option>{STATUS_LIST.map(o => <option key={o}>{o}</option>)}</select>;
-      case "situacao": return <select value={fSituacao} onChange={e => setFSituacao(e.target.value)} style={{ ...smStyle, color: fSituacao !== "Todos" ? "#1a56db" : "#94a3b8" }}><option value="Todos">(Todos)</option>{SITUACAO_LIST.map(o => <option key={o}>{o}</option>)}</select>;
+      case "cliente": return <select value={fCliente} onChange={e => setFCliente(e.target.value)} style={{ ...smStyle, color: fCliente !== "Todos" ? "#024aab" : "#94a3b8" }}><option value="Todos">(Todos)</option>{uniq(tarefasEnriquecidas.map(t => t.cliente)).slice(1).map(o => <option key={o}>{o}</option>)}</select>;
+      case "codigo": return <select value={fCodigo} onChange={e => setFCodigo(e.target.value)} style={{ ...smStyle, color: fCodigo !== "Todos" ? "#024aab" : "#94a3b8" }}><option value="Todos">(Todos)</option>{uniq(tarefasEnriquecidas.map(t => t.codigo_cliente)).slice(1).map(o => <option key={o}>{o}</option>)}</select>;
+      case "cnpj": return <select value={fCnpj} onChange={e => setFCnpj(e.target.value)} style={{ ...smStyle, color: fCnpj !== "Todos" ? "#024aab" : "#94a3b8" }}><option value="Todos">(Todos)</option>{uniq(tarefasEnriquecidas.map(t => t.cnpj_cliente)).slice(1).map(o => <option key={o}>{o}</option>)}</select>;
+      case "competencia": return <select value={fComp} onChange={e => setFComp(e.target.value)} style={{ ...smStyle, color: fComp !== "Todos" ? "#024aab" : "#94a3b8" }}><option value="Todos">(Todos)</option>{uniq(tarefasEnriquecidas.map(t => t.competencia)).slice(1).map(o => <option key={o}>{o}</option>)}</select>;
+      case "tipo": return <select value={fTipo} onChange={e => setFTipo(e.target.value)} style={{ ...smStyle, color: fTipo !== "Todos" ? "#024aab" : "#94a3b8" }}><option value="Todos">(Todos)</option>{TIPOS.map(o => <option key={o}>{o}</option>)}</select>;
+      case "prazo_interno": return <input value={fPrazoInt} onChange={e => setFPrazoInt(e.target.value)} placeholder="dd/mm/aaaa" maxLength={10} style={{ ...inputSmStyle, color: fPrazoInt ? "#024aab" : "#94a3b8" }} />;
+      case "prazo_legal": return <input value={fPrazoLeg} onChange={e => setFPrazoLeg(e.target.value)} placeholder="dd/mm/aaaa" maxLength={10} style={{ ...inputSmStyle, color: fPrazoLeg ? "#024aab" : "#94a3b8" }} />;
+      case "responsavel": return <select value={fResp} onChange={e => setFResp(e.target.value)} style={{ ...smStyle, color: fResp !== "Todos" ? "#024aab" : "#94a3b8" }}><option value="Todos">(Todos)</option>{uniq(tarefasEnriquecidas.map(t => t.responsavel_nome)).slice(1).map(o => <option key={o}>{o}</option>)}</select>;
+      case "revisor": return <select value={fRevisor} onChange={e => setFRevisor(e.target.value)} style={{ ...smStyle, color: fRevisor !== "Todos" ? "#024aab" : "#94a3b8" }}><option value="Todos">(Todos)</option>{uniq(tarefasEnriquecidas.map(t => t.revisor_nome)).slice(1).map(o => <option key={o}>{o}</option>)}</select>;
+      case "participantes": return <input value={fPart} onChange={e => setFPart(e.target.value)} placeholder="Buscar..." style={{ ...inputSmStyle, color: fPart ? "#024aab" : "#94a3b8" }} />;
+      case "status": return <select value={fStatus} onChange={e => setFStatus(e.target.value)} style={{ ...smStyle, color: fStatus !== "Todos" ? "#024aab" : "#94a3b8" }}><option value="Todos">(Todos)</option>{STATUS_LIST.map(o => <option key={o}>{o}</option>)}</select>;
+      case "situacao": return <select value={fSituacao} onChange={e => setFSituacao(e.target.value)} style={{ ...smStyle, color: fSituacao !== "Todos" ? "#024aab" : "#94a3b8" }}><option value="Todos">(Todos)</option>{SITUACAO_LIST.map(o => <option key={o}>{o}</option>)}</select>;
       default: return null;
     }
   }
@@ -760,11 +760,11 @@ export default function App() {
         const BAR = { "Aguardando Cliente":"#f97316","Em Elaboração":"#3b82f6","Enviado por Email":"#22c55e","Finalizado":"#16a34a","Pendente":"#eab308","Revisão":"#a855f7" };
         const SIT = { "No Prazo":"#22c55e","A Vencer":"#eab308","Vencido Internamente":"#f97316","Vencido Legalmente":"#ef4444","Finalizado no Prazo":"#16a34a","Finalizado no Vencimento Legal":"#ca8a04","Finalizado em Atraso":"#dc2626" };
         function Bars({ items, colors, tot }) { return <div style={{ display:"flex",flexDirection:"column",gap:8 }}>{items.filter(([,v])=>v>0).map(([lb,v])=><div key={lb}><div style={{ display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3 }}><span style={{ color:"#475569" }}>{lb}</span><span style={{ fontWeight:700 }}>{v} <span style={{ color:"#94a3b8",fontWeight:400 }}>({tot>0?Math.round(v/tot*100):0}%)</span></span></div><div style={{ background:"#f1f5f9",borderRadius:4,height:8,overflow:"hidden" }}><div style={{ background:colors[lb]||"#3b82f6",width:`${tot>0?(v/tot*100):0}%`,height:"100%",borderRadius:4 }} /></div></div>)}</div>; }
-        return <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:20 }}><div style={{ background:"white",borderRadius:16,padding:32,width:"100%",maxWidth:780,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.15)" }}><div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:24 }}><div style={{ fontFamily:"'Plus Jakarta Sans', sans-serif",fontSize:20,fontWeight:800,color:"#1a56db" }}>📊 Relatório de Progresso</div><button onClick={()=>setRelatorio(false)} style={{ background:"none",border:"none",color:"#94a3b8",fontSize:24,cursor:"pointer" }}>×</button></div><div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:24 }}>{[{l:"Total",v:total,c:"#1a56db"},{l:"Finalizadas",v:fin,c:"#16a34a"},{l:"Em Aberto",v:total-fin,c:"#f97316"},{l:"% Concluído",v:pct+"%",c:"#a855f7"}].map(x=><div key={x.l} style={{ background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"16px 20px",textAlign:"center" }}><div style={{ fontSize:26,fontWeight:800,color:x.c,fontFamily:"'Plus Jakarta Sans', sans-serif" }}>{x.v}</div><div style={{ fontSize:11,color:"#94a3b8",marginTop:4,fontWeight:600 }}>{x.l.toUpperCase()}</div></div>)}</div><div style={{ background:"#f8fafc",borderRadius:12,padding:"14px 20px",marginBottom:20,border:"1px solid #e2e8f0" }}><div style={{ display:"flex",justifyContent:"space-between",marginBottom:8 }}><span style={{ fontSize:13,fontWeight:600,color:"#475569" }}>Progresso Geral</span><span style={{ fontSize:13,fontWeight:700,color:"#1a56db" }}>{pct}%</span></div><div style={{ background:"#e2e8f0",borderRadius:6,height:12,overflow:"hidden" }}><div style={{ background:"linear-gradient(90deg,#1a56db,#0ea5e9)",width:`${pct}%`,height:"100%",borderRadius:6 }} /></div></div><div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:20 }}><div style={{ background:"#f8fafc",borderRadius:12,padding:"16px 20px",border:"1px solid #e2e8f0" }}><div style={{ fontSize:13,fontWeight:700,color:"#1e293b",marginBottom:14 }}>Por Status</div><Bars items={Object.entries(porStatus)} colors={BAR} tot={total} /></div><div style={{ background:"#f8fafc",borderRadius:12,padding:"16px 20px",border:"1px solid #e2e8f0" }}><div style={{ fontSize:13,fontWeight:700,color:"#1e293b",marginBottom:14 }}>Por Situação</div><Bars items={Object.entries(porSituacao)} colors={SIT} tot={total} /></div><div style={{ background:"#f8fafc",borderRadius:12,padding:"16px 20px",border:"1px solid #e2e8f0" }}><div style={{ fontSize:13,fontWeight:700,color:"#1e293b",marginBottom:14 }}>Por Responsável</div><div style={{ display:"flex",flexDirection:"column",gap:8 }}>{porResp.map(p=><div key={p.nome}><div style={{ display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3 }}><span style={{ color:"#475569" }}>{p.nome}</span><span style={{ fontWeight:700 }}>{p.fin}/{p.total}</span></div><div style={{ background:"#e2e8f0",borderRadius:4,height:8,overflow:"hidden" }}><div style={{ background:"#1a56db",width:`${p.total>0?(p.fin/p.total*100):0}%`,height:"100%",borderRadius:4 }} /></div></div>)}{porResp.length===0&&<div style={{ color:"#94a3b8",fontSize:13 }}>Nenhum dado.</div>}</div></div><div style={{ background:"#f8fafc",borderRadius:12,padding:"16px 20px",border:"1px solid #e2e8f0" }}><div style={{ fontSize:13,fontWeight:700,color:"#1e293b",marginBottom:14 }}>Por Competência (últimas 6)</div><div style={{ display:"flex",flexDirection:"column",gap:8 }}>{porComp.map(c=><div key={c.comp}><div style={{ display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3 }}><span style={{ color:"#475569",fontWeight:600 }}>{c.comp}</span><span style={{ fontWeight:700 }}>{c.fin}/{c.total}</span></div><div style={{ background:"#e2e8f0",borderRadius:4,height:8,overflow:"hidden" }}><div style={{ background:"#0ea5e9",width:`${c.total>0?(c.fin/c.total*100):0}%`,height:"100%",borderRadius:4 }} /></div></div>)}{porComp.length===0&&<div style={{ color:"#94a3b8",fontSize:13 }}>Nenhum dado.</div>}</div></div></div></div></div>;
+        return <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:20 }}><div style={{ background:"white",borderRadius:16,padding:32,width:"100%",maxWidth:780,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.15)" }}><div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:24 }}><div style={{ fontFamily:"'Plus Jakarta Sans', sans-serif",fontSize:20,fontWeight:800,color:"#024aab" }}>📊 Relatório de Progresso</div><button onClick={()=>setRelatorio(false)} style={{ background:"none",border:"none",color:"#94a3b8",fontSize:24,cursor:"pointer" }}>×</button></div><div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:24 }}>{[{l:"Total",v:total,c:"#024aab"},{l:"Finalizadas",v:fin,c:"#16a34a"},{l:"Em Aberto",v:total-fin,c:"#f97316"},{l:"% Concluído",v:pct+"%",c:"#a855f7"}].map(x=><div key={x.l} style={{ background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"16px 20px",textAlign:"center" }}><div style={{ fontSize:26,fontWeight:800,color:x.c,fontFamily:"'Plus Jakarta Sans', sans-serif" }}>{x.v}</div><div style={{ fontSize:11,color:"#94a3b8",marginTop:4,fontWeight:600 }}>{x.l.toUpperCase()}</div></div>)}</div><div style={{ background:"#f8fafc",borderRadius:12,padding:"14px 20px",marginBottom:20,border:"1px solid #e2e8f0" }}><div style={{ display:"flex",justifyContent:"space-between",marginBottom:8 }}><span style={{ fontSize:13,fontWeight:600,color:"#475569" }}>Progresso Geral</span><span style={{ fontSize:13,fontWeight:700,color:"#024aab" }}>{pct}%</span></div><div style={{ background:"#e2e8f0",borderRadius:6,height:12,overflow:"hidden" }}><div style={{ background:"linear-gradient(90deg,#024aab,#83a9dc)",width:`${pct}%`,height:"100%",borderRadius:6 }} /></div></div><div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:20 }}><div style={{ background:"#f8fafc",borderRadius:12,padding:"16px 20px",border:"1px solid #e2e8f0" }}><div style={{ fontSize:13,fontWeight:700,color:"#1e293b",marginBottom:14 }}>Por Status</div><Bars items={Object.entries(porStatus)} colors={BAR} tot={total} /></div><div style={{ background:"#f8fafc",borderRadius:12,padding:"16px 20px",border:"1px solid #e2e8f0" }}><div style={{ fontSize:13,fontWeight:700,color:"#1e293b",marginBottom:14 }}>Por Situação</div><Bars items={Object.entries(porSituacao)} colors={SIT} tot={total} /></div><div style={{ background:"#f8fafc",borderRadius:12,padding:"16px 20px",border:"1px solid #e2e8f0" }}><div style={{ fontSize:13,fontWeight:700,color:"#1e293b",marginBottom:14 }}>Por Responsável</div><div style={{ display:"flex",flexDirection:"column",gap:8 }}>{porResp.map(p=><div key={p.nome}><div style={{ display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3 }}><span style={{ color:"#475569" }}>{p.nome}</span><span style={{ fontWeight:700 }}>{p.fin}/{p.total}</span></div><div style={{ background:"#e2e8f0",borderRadius:4,height:8,overflow:"hidden" }}><div style={{ background:"#024aab",width:`${p.total>0?(p.fin/p.total*100):0}%`,height:"100%",borderRadius:4 }} /></div></div>)}{porResp.length===0&&<div style={{ color:"#94a3b8",fontSize:13 }}>Nenhum dado.</div>}</div></div><div style={{ background:"#f8fafc",borderRadius:12,padding:"16px 20px",border:"1px solid #e2e8f0" }}><div style={{ fontSize:13,fontWeight:700,color:"#1e293b",marginBottom:14 }}>Por Competência (últimas 6)</div><div style={{ display:"flex",flexDirection:"column",gap:8 }}>{porComp.map(c=><div key={c.comp}><div style={{ display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3 }}><span style={{ color:"#475569",fontWeight:600 }}>{c.comp}</span><span style={{ fontWeight:700 }}>{c.fin}/{c.total}</span></div><div style={{ background:"#e2e8f0",borderRadius:4,height:8,overflow:"hidden" }}><div style={{ background:"#83a9dc",width:`${c.total>0?(c.fin/c.total*100):0}%`,height:"100%",borderRadius:4 }} /></div></div>)}{porComp.length===0&&<div style={{ color:"#94a3b8",fontSize:13 }}>Nenhum dado.</div>}</div></div></div></div></div>;
       })()}
 
       {/* HEADER */}
-      <div style={{ background: "#1a56db", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+      <div style={{ background: "#024aab", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <Logo size={20} dark={false} />
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <div style={{ textAlign: "right" }}><div style={{ fontSize: 14, fontWeight: 600, color: "white" }}>{profile.nome}</div><div style={{ fontSize: 11, color: isAdmin ? "#fde68a" : "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: 1 }}>{isAdmin ? "Admin" : "Colaborador"}</div></div>
@@ -772,7 +772,7 @@ export default function App() {
             <button onClick={() => setPainelClientes(true)} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Clientes</button>
             <button onClick={() => setPainelUsuarios(true)} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Usuários</button>
             <button onClick={gerarProximoMes} disabled={gerandoRecorrentes} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, opacity: gerandoRecorrentes ? 0.7 : 1 }}>Gerar Próximo Mês</button>
-            <button onClick={abrirNova} style={{ background: "white", border: "none", borderRadius: 8, color: "#1a56db", padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Nova Tarefa</button>
+            <button onClick={abrirNova} style={{ background: "white", border: "none", borderRadius: 8, color: "#024aab", padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Nova Tarefa</button>
           </>)}
           <button onClick={handleLogout} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "rgba(255,255,255,0.8)", padding: "8px 14px", fontSize: 13, cursor: "pointer" }}>Sair</button>
         </div>
@@ -780,7 +780,7 @@ export default function App() {
 
       <div style={{ padding: "16px 24px" }}>
         {msgRecorrente && <div style={{ background: "#dcfce7", border: "1px solid #22c55e", borderRadius: 10, padding: "10px 20px", color: "#15803d", fontSize: 14, marginBottom: 12 }}>{msgRecorrente}</div>}
-        {msgReplicar && <div style={{ background: "#dbeafe", border: "1px solid #3b82f6", borderRadius: 10, padding: "10px 20px", color: "#1d4ed8", fontSize: 14, marginBottom: 12 }}>{msgReplicar}</div>}
+        {msgReplicar && <div style={{ background: "#dce8f7", border: "1px solid #3b82f6", borderRadius: 10, padding: "10px 20px", color: "#024aab", fontSize: 14, marginBottom: 12 }}>{msgReplicar}</div>}
 
         {/* BARRA SUPERIOR */}
         <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
@@ -802,7 +802,7 @@ export default function App() {
               <input type="checkbox" checked={esconderFinalizados} onChange={e => setEsconderFinalizados(e.target.checked)} style={{ width: 15, height: 15 }} />
               Esconder finalizados
             </label>
-            {isAdmin && <button onClick={() => setRelatorio(true)} style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, color: "#1d4ed8", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>📊 Relatório</button>}
+            {isAdmin && <button onClick={() => setRelatorio(true)} style={{ background: "#edf3fb", border: "1px solid #b3cfee", borderRadius: 8, color: "#024aab", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>📊 Relatório</button>}
             {isAdmin && <GerenciarAcoes selecionados={selecionados} tarefas={tarefasEnriquecidas} profiles={profiles} onAtualizar={carregarTarefas} onLimpar={() => setSelecionados([])} />}
             <button onClick={exportarExcel} style={{ background: "#f0fdf4", border: "1px solid #22c55e", borderRadius: 8, color: "#15803d", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Exportar Excel</button>
           </div>
@@ -823,11 +823,11 @@ export default function App() {
                 </th>
                 {cols.map(c => (
                   <th key={c.key} draggable onDragStart={() => onDragStart(c.key)} onDragOver={e => { e.preventDefault(); onDragOverCol(c.key); }} onDrop={() => onDrop(c.key)}
-                    style={{ padding: "8px 12px 4px", textAlign: "left", fontSize: 11, color: "#64748b", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", whiteSpace: "nowrap", position: "relative", cursor: "grab", background: dragOver === c.key ? "#dbeafe" : "transparent", userSelect: "none" }}>
+                    style={{ padding: "8px 12px 4px", textAlign: "left", fontSize: 11, color: "#64748b", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", whiteSpace: "nowrap", position: "relative", cursor: "grab", background: dragOver === c.key ? "#dce8f7" : "transparent", userSelect: "none" }}>
                     {c.label}
                     {c.key !== "acoes" && (
                       <div onMouseDown={e => onResizeStart(e, c.key)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 6, cursor: "col-resize", background: "transparent", zIndex: 10 }}
-                        onMouseEnter={e => e.currentTarget.style.background = "#bfdbfe"}
+                        onMouseEnter={e => e.currentTarget.style.background = "#b3cfee"}
                         onMouseLeave={e => e.currentTarget.style.background = "transparent"} />
                     )}
                   </th>
@@ -851,7 +851,7 @@ export default function App() {
                 const sel = selecionados.includes(t.id);
                 return (
                   <tr key={t.id}
-                    style={{ borderBottom: "1px solid #f1f5f9", background: sel ? "#eff6ff" : i % 2 === 0 ? "white" : "#f8fafc" }}
+                    style={{ borderBottom: "1px solid #f1f5f9", background: sel ? "#edf3fb" : i % 2 === 0 ? "white" : "#f8fafc" }}
                     onMouseEnter={e => { if (!sel) e.currentTarget.style.background = "#f1f5f9"; }}
                     onMouseLeave={e => { if (!sel) e.currentTarget.style.background = i % 2 === 0 ? "white" : "#f8fafc"; }}>
                     <td style={{ padding: "10px 12px", textAlign: "center" }}>
@@ -875,7 +875,7 @@ export default function App() {
       {modal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 20 }}>
           <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 600, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
-            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#1a56db", marginBottom: 24 }}>{editando ? "Editar Tarefa" : "Nova Tarefa"}</div>
+            <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#024aab", marginBottom: 24 }}>{editando ? "Editar Tarefa" : "Nova Tarefa"}</div>
             {clientes.length === 0 && <div style={{ background: "#fef9c3", border: "1px solid #eab308", borderRadius: 8, padding: "10px 14px", color: "#854d0e", fontSize: 13, marginBottom: 16 }}>Nenhum cliente cadastrado. Cadastre clientes antes.</div>}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div style={{ gridColumn: "1/-1" }}><label style={LABEL}>Cliente *</label><select value={form.cliente_id} onChange={e => { const c = clientes.find(c => c.id === parseInt(e.target.value)); setForm(f => ({ ...f, cliente_id: e.target.value, responsavel_id: c?.responsavel_id || f.responsavel_id })); }} style={INPUT}><option value="">Selecione o cliente...</option>{clientes.map(c => <option key={c.id} value={c.id}>{c.nome}{c.cnpj ? ` — ${c.cnpj}` : ""}</option>)}</select></div>
@@ -887,9 +887,9 @@ export default function App() {
                 <label style={LABEL}>Participantes</label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: (form.participantes || "").split(",").map(x=>x.trim()).filter(Boolean).length > 0 ? 8 : 0 }}>
                   {(form.participantes || "").split(",").map(x => x.trim()).filter(Boolean).map(nome => (
-                    <span key={nome} style={{ background: "#dbeafe", color: "#1d4ed8", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                    <span key={nome} style={{ background: "#dce8f7", color: "#024aab", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5 }}>
                       {nome}
-                      <span onClick={() => { const atual = (form.participantes || "").split(",").map(x => x.trim()).filter(Boolean); setForm(f => ({ ...f, participantes: atual.filter(n => n !== nome).join(", ") })); }} style={{ cursor: "pointer", fontWeight: 700, fontSize: 13, lineHeight: 1, color: "#1d4ed8" }}>×</span>
+                      <span onClick={() => { const atual = (form.participantes || "").split(",").map(x => x.trim()).filter(Boolean); setForm(f => ({ ...f, participantes: atual.filter(n => n !== nome).join(", ") })); }} style={{ cursor: "pointer", fontWeight: 700, fontSize: 13, lineHeight: 1, color: "#024aab" }}>×</span>
                     </span>
                   ))}
                 </div>
