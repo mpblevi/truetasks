@@ -225,12 +225,28 @@ function ModalAcaoLote({ tipo, count, profiles, onFechar, onSalvar }) {
 // ─── DROPDOWN OPÇÕES INDIVIDUAL ────────────────────────────────────────────
 function OpcoesTarefa({ tarefa, onEditar, onReplicar, onAcao, onExcluir, isAdmin, podeEditar }) {
   const [aberto, setAberto] = useState(false);
-  const ref = useRef(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const btnRef = useRef(null);
+  const menuRef = useRef(null);
+
   useEffect(() => {
-    function fechar(e) { if (ref.current && !ref.current.contains(e.target)) setAberto(false); }
+    function fechar(e) {
+      if (btnRef.current && btnRef.current.contains(e.target)) return;
+      if (menuRef.current && menuRef.current.contains(e.target)) return;
+      setAberto(false);
+    }
     document.addEventListener("mousedown", fechar);
     return () => document.removeEventListener("mousedown", fechar);
   }, []);
+
+  function toggleAberto() {
+    if (!aberto && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 4, left: rect.right - 190 });
+    }
+    setAberto(a => !a);
+  }
+
   const opcoes = [
     { label: "Editar", show: podeEditar, action: () => { onEditar(tarefa); setAberto(false); } },
     { label: "Editar Responsável", show: isAdmin, action: () => { onAcao("responsavel", tarefa); setAberto(false); } },
@@ -243,13 +259,14 @@ function OpcoesTarefa({ tarefa, onEditar, onReplicar, onAcao, onExcluir, isAdmin
     { label: "Replicar", show: isAdmin, action: () => { onReplicar(tarefa); setAberto(false); } },
     { label: "Excluir", show: isAdmin, action: () => { onExcluir(tarefa.id); setAberto(false); }, danger: true },
   ].filter(o => o.show);
+
   return (
-    <div ref={ref} style={{ position: "relative" }}>
-      <button onClick={() => setAberto(!aberto)} style={{ background: "white", border: "1px solid #cbd5e1", borderRadius: 7, color: "#475569", padding: "4px 10px", fontSize: 12, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 3, whiteSpace: "nowrap" }}>
+    <>
+      <button ref={btnRef} onClick={toggleAberto} style={{ background: "white", border: "1px solid #cbd5e1", borderRadius: 7, color: "#475569", padding: "4px 10px", fontSize: 12, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 3, whiteSpace: "nowrap" }}>
         Opções <span style={{ fontSize: 9 }}>{aberto ? "▲" : "▼"}</span>
       </button>
       {aberto && (
-        <div style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", background: "white", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 500, minWidth: 190, overflow: "hidden" }}>
+        <div ref={menuRef} style={{ position: "fixed", top: pos.top, left: pos.left, background: "white", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", zIndex: 9999, minWidth: 190, overflow: "hidden" }}>
           {opcoes.map((o, i) => (
             <button key={i} onClick={o.action} style={{ display: "block", width: "100%", padding: "9px 16px", fontSize: 13, color: o.danger ? "#dc2626" : "#1e293b", background: "white", border: "none", textAlign: "left", cursor: "pointer", borderBottom: i < opcoes.length - 1 ? "1px solid #f1f5f9" : "none", fontFamily: "'Lato', sans-serif", fontWeight: o.danger ? 600 : 400 }}
               onMouseEnter={e => e.currentTarget.style.background = o.danger ? "#fee2e2" : "#f8fafc"}
@@ -259,7 +276,7 @@ function OpcoesTarefa({ tarefa, onEditar, onReplicar, onAcao, onExcluir, isAdmin
           ))}
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -521,7 +538,7 @@ export default function App() {
     { key: "participantes", label: "Participantes", w: 130 },
     { key: "status", label: "Status", w: 130 },
     { key: "situacao", label: "Situação", w: 160 },
-    { key: "acoes", label: "Ações", w: 110 },
+    { key: "acoes", label: "Ações", w: 100 },
   ];
   const [colOrder, setColOrder] = useState(COL_DEFS.map(c => c.key));
   const [colWidths, setColWidths] = useState(Object.fromEntries(COL_DEFS.map(c => [c.key, c.w])));
@@ -793,7 +810,7 @@ export default function App() {
 
         {/* TABELA */}
         <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "auto" }}>
-          <table style={{ borderCollapse: "collapse", tableLayout: "fixed", minWidth: "100%", width: colOrder.reduce((sum, k) => sum + (colWidths[k] || 120), 40) + "px" }}>
+          <table style={{ borderCollapse: "collapse", tableLayout: "fixed", width: colOrder.reduce((sum, k) => sum + (colWidths[k] || 120), 40) + "px" }}>
             <colgroup>
               <col style={{ width: 40 }} />
               {cols.map(c => <col key={c.key} style={{ width: colWidths[c.key] || c.w }} />)}
