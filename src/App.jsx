@@ -266,7 +266,8 @@ function OpcoesTarefa({ tarefa, onEditar, onReplicar, onAcao, onExcluir, isAdmin
     { label: "Complementar", show: podeEditar, action: () => { onAcao("complementar", tarefa); setAberto(false); } },
     { label: "Reabrir", show: isAdmin, action: () => { onAcao("reabrir", tarefa); setAberto(false); } },
     { label: "Retificar", show: isAdmin, action: () => { onAcao("retificar", tarefa); setAberto(false); } },
-    { label: "Replicar", show: isAdmin, action: () => { onReplicar(tarefa); setAberto(false); } },
+   { label: "Replicar", show: isAdmin, action: () => { onReplicar(tarefa); setAberto(false); } },
+    { label: "Finalizar", show: podeEditar, action: () => { onAcao("finalizar_individual", tarefa); setAberto(false); }, success: true },
     { label: "Excluir", show: isAdmin, action: () => { onExcluir(tarefa.id); setAberto(false); }, danger: true },
   ].filter(o => o.show);
 
