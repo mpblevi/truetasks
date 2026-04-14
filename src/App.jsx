@@ -470,7 +470,7 @@ return (
 
 // ─── PAINEL OBRIGAÇÕES PADRÃO ──────────────────────────────────────────────
 function PainelObrigacoes({ obrigacoes, clientes, profiles, onAtualizar, onFechar }) {
-const [form, setForm] = useState({ tipo: “DCTFWEB”, dia_prazo_interno: 15, dia_prazo_legal: 20, periodicidade: “mensal” });
+const [form, setForm] = useState({ tipo: “DCTFWEB”, dia_prazo_interno: 15, dia_prazo_legal: 20, periodicidade: “mensal”, mes_prazo: 7 });
 const [loading, setLoading] = useState(false);
 const [msg, setMsg] = useState(””);
 const [clienteSel, setClienteSel] = useState(null);
@@ -485,7 +485,7 @@ setExcecoes(data || []);
 
 async function criarObrigacao() {
 setLoading(true);
-await supabase.from(“obrigacoes_padrao”).insert({ tipo: form.tipo, dia_prazo_interno: parseInt(form.dia_prazo_interno), dia_prazo_legal: parseInt(form.dia_prazo_legal), periodicidade: form.periodicidade, ativo: true });
+await supabase.from(“obrigacoes_padrao”).insert({ tipo: form.tipo, dia_prazo_interno: parseInt(form.dia_prazo_interno), dia_prazo_legal: parseInt(form.dia_prazo_legal), periodicidade: form.periodicidade, mes_prazo: form.periodicidade === “anual” ? parseInt(form.mes_prazo) : null, ativo: true });
 setMsg(`Obrigação "${form.tipo}" criada!`);
 onAtualizar(); setLoading(false);
 }
@@ -533,7 +533,7 @@ return (
           <div key={o.id} style={{ background: o.ativo ? "#f0f9ff" : "#f8fafc", border: `1px solid ${o.ativo ? "#bae6fd" : "#e2e8f0"}`, borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <span style={{ background: o.ativo ? "#dce8f7" : "#f1f5f9", color: o.ativo ? "#024aab" : "#94a3b8", borderRadius: 6, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{o.tipo}</span>
-              <span style={{ fontSize: 12, color: "#64748b" }}>Prazo interno: dia <strong>{o.dia_prazo_interno}</strong> · Legal: dia <strong>{o.dia_prazo_legal}</strong> · <strong style={{ color: o.periodicidade === "anual" ? "#7c3aed" : "#024aab" }}>{o.periodicidade === "anual" ? "Anual" : "Mensal"}</strong></span>
+              <span style={{ fontSize: 12, color: "#64748b" }}>Prazo interno: dia <strong>{o.dia_prazo_interno}</strong> · Legal: dia <strong>{o.dia_prazo_legal}</strong> · <strong style={{ color: o.periodicidade === "anual" ? "#7c3aed" : "#024aab" }}>{o.periodicidade === "anual" ? `Anual (vence em ${["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][(o.mes_prazo||7)-1]})` : "Mensal"}</strong></span>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => toggleObrigacao(o.id, o.ativo)} style={{ background: o.ativo ? "#fef9c3" : "#dcfce7", border: "none", borderRadius: 7, color: o.ativo ? "#854d0e" : "#15803d", padding: "5px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>{o.ativo ? "Desativar" : "Ativar"}</button>
@@ -573,7 +573,15 @@ return (
             <option value="anual">Anual</option>
           </select>
         </div>
-        <button onClick={criarObrigacao} disabled={loading} style={{ background:"linear-gradient(135deg,#024aab,#024aab)",border:"none",borderRadius:8,color:"white",padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer",opacity:loading?0.7:1 }}>Adicionar</button>
+        {form.periodicidade === "anual" && (
+          <div>
+            <label style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6, display: "block" }}>Mês do Prazo</label>
+            <select value={form.mes_prazo} onChange={e => setForm(f => ({ ...f, mes_prazo: e.target.value }))} style={{ background:"white",border:"1px solid #94a3b8",borderRadius:8,color:"#0f172a",padding:"8px 12px",fontSize:13,width:"100%",outline:"none" }}>
+              {["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"].map((m,i) => <option key={i+1} value={i+1}>{m}</option>)}
+            </select>
+          </div>
+        )}
+        <button onClick={criarObrigacao} disabled={loading} style={{ background:"linear-gradient(135deg,#024aab,#024aab)",border:"none",borderRadius:8,color:"white",padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer",opacity:loading?0.7:1,gridColumn:form.periodicidade==="anual"?"auto":"span 1" }}>Adicionar</button>
       </div>
     </div>
 
@@ -866,10 +874,9 @@ if (obsAtivas.length > 0) {
       let prazoAno = ano;
       let prazoMes = mes;
       if (ob.periodicidade === "anual") {
-        // Prazo cai no ano seguinte (ex: competência 12/2025 → prazo em 2026)
+        // Prazo cai no ano seguinte usando o mês configurado na obrigação
         prazoAno = String(parseInt(ano) + 1);
-        prazoMes = "07"; // Julho do ano seguinte (padrão ECF/ECD)
-        if (diaInt && ob.dia_prazo_interno) prazoMes = mes; // usa o mês configurado se definido
+        prazoMes = String(ob.mes_prazo || 7).padStart(2, "0");
       }
 
       const prazoInt = `${prazoAno}-${prazoMes}-${String(diaInt).padStart(2, "0")}`;
