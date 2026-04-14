@@ -258,7 +258,7 @@ function OpcoesTarefa({ tarefa, onEditar, onReplicar, onAcao, onExcluir, isAdmin
   }
 
   const opcoes = [
-    { label: "Editar", show: podeEditar, action: () => { onEditar(tarefa); setAberto(false); } },
+  { label: "Editar", show: podeEditar, action: () => { onEditar(tarefa); setAberto(false); } },
     { label: "Editar Responsável", show: isAdmin, action: () => { onAcao("responsavel", tarefa); setAberto(false); } },
     { label: "Editar Revisor", show: isAdmin, action: () => { onAcao("revisor", tarefa); setAberto(false); } },
     { label: "Editar Status", show: podeEditar, action: () => { onAcao("status", tarefa); setAberto(false); } },
@@ -304,6 +304,7 @@ function ModalAcao({ tipo, tarefa, profiles, onFechar, onSalvar }) {
     complementar: { titulo: "Tarefa Complementar", tipo: "textarea" },
     reabrir: { titulo: "Reabrir Tarefa", tipo: "textarea" },
     retificar: { titulo: "Tarefa Retificadora", tipo: "textarea" },
+    finalizar_individual: { titulo: "Finalizar Tarefa", tipo: "confirmar" },
   };
   const cfg = configs[tipo];
   if (!cfg) return null;
@@ -315,7 +316,7 @@ function ModalAcao({ tipo, tarefa, profiles, onFechar, onSalvar }) {
     else if (tipo === "status") updates = { status: valor };
     else if (tipo === "vencimento") updates = { prazo_interno: valor, prazo_legal: valor2 };
     else if (tipo === "complementar" || tipo === "reabrir") updates = { status: "Pendente", obs: (tarefa.obs ? tarefa.obs + "\n" : "") + `[${tipo === "complementar" ? "Complementar" : "Reaberto"}]: ${valor}` };
-    else if (tipo === "retificar") { await supabase.from("tarefas").insert({ ...tarefa, id: undefined, status: "Pendente", obs: `[Retificação de #${tarefa.id}]: ${valor}`, criado_por: tarefa.criado_por }); setLoading(false); onSalvar(); return; }
+    else if (tipo === "retificar") { await supabase.from("tarefas").insert({ ...tarefa, id: undefined, status: "Pendente", obs: `[Retificação de #${tarefa.id}]: ${valor}`, criado_por: tarefa.criado_por }); setLoading(false); onSalvar(); return; }     else if (tipo === "finalizar_individual") { updates = { status: "Finalizado" }; }
     await supabase.from("tarefas").update(updates).eq("id", tarefa.id);
     setLoading(false); onSalvar();
   }
