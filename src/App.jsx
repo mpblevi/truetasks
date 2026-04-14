@@ -233,7 +233,7 @@ function ModalAcaoLote({ tipo, count, profiles, onFechar, onSalvar }) {
 }
 
 // ─── DROPDOWN OPÇÕES INDIVIDUAL ────────────────────────────────────────────
-function OpcoesTarefa({ tarefa, onEditar, onReplicar, onAcao, onExcluir, isAdmin, podeEditar }) {
+function OpcoesTarefa({ tarefa, onEditar, onReplicar, onAcao, onExcluir, onAtualizar, isAdmin, podeEditar }) {
   const [aberto, setAberto] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const btnRef = useRef(null);
@@ -258,7 +258,7 @@ function OpcoesTarefa({ tarefa, onEditar, onReplicar, onAcao, onExcluir, isAdmin
   }
 
   const opcoes = [
-  { label: "Editar", show: podeEditar, action: () => { onEditar(tarefa); setAberto(false); } },
+    { label: "Editar", show: podeEditar, action: () => { onEditar(tarefa); setAberto(false); } },
     { label: "Editar Responsável", show: isAdmin, action: () => { onAcao("responsavel", tarefa); setAberto(false); } },
     { label: "Editar Revisor", show: isAdmin, action: () => { onAcao("revisor", tarefa); setAberto(false); } },
     { label: "Editar Status", show: podeEditar, action: () => { onAcao("status", tarefa); setAberto(false); } },
@@ -266,8 +266,8 @@ function OpcoesTarefa({ tarefa, onEditar, onReplicar, onAcao, onExcluir, isAdmin
     { label: "Complementar", show: podeEditar, action: () => { onAcao("complementar", tarefa); setAberto(false); } },
     { label: "Reabrir", show: isAdmin, action: () => { onAcao("reabrir", tarefa); setAberto(false); } },
     { label: "Retificar", show: isAdmin, action: () => { onAcao("retificar", tarefa); setAberto(false); } },
-   { label: "Replicar", show: isAdmin, action: () => { onReplicar(tarefa); setAberto(false); } },
-    { label: "Finalizar", show: podeEditar, action: () => { onAcao("finalizar_individual", tarefa); setAberto(false); }, success: true },
+    { label: "Replicar", show: isAdmin, action: () => { onReplicar(tarefa); setAberto(false); } },
+    { label: "Finalizar", show: podeEditar, action: async () => { if (window.confirm("Finalizar esta tarefa?")) { await supabase.from("tarefas").update({ status: "Finalizado" }).eq("id", tarefa.id); onAtualizar && onAtualizar(); } setAberto(false); }, success: true },
     { label: "Excluir", show: isAdmin, action: () => { onExcluir(tarefa.id); setAberto(false); }, danger: true },
   ].filter(o => o.show);
 
@@ -304,7 +304,6 @@ function ModalAcao({ tipo, tarefa, profiles, onFechar, onSalvar }) {
     complementar: { titulo: "Tarefa Complementar", tipo: "textarea" },
     reabrir: { titulo: "Reabrir Tarefa", tipo: "textarea" },
     retificar: { titulo: "Tarefa Retificadora", tipo: "textarea" },
-    finalizar_individual: { titulo: "Finalizar Tarefa", tipo: "confirmar" },
   };
   const cfg = configs[tipo];
   if (!cfg) return null;
@@ -316,7 +315,7 @@ function ModalAcao({ tipo, tarefa, profiles, onFechar, onSalvar }) {
     else if (tipo === "status") updates = { status: valor };
     else if (tipo === "vencimento") updates = { prazo_interno: valor, prazo_legal: valor2 };
     else if (tipo === "complementar" || tipo === "reabrir") updates = { status: "Pendente", obs: (tarefa.obs ? tarefa.obs + "\n" : "") + `[${tipo === "complementar" ? "Complementar" : "Reaberto"}]: ${valor}` };
-    else if (tipo === "retificar") { await supabase.from("tarefas").insert({ ...tarefa, id: undefined, status: "Pendente", obs: `[Retificação de #${tarefa.id}]: ${valor}`, criado_por: tarefa.criado_por }); setLoading(false); onSalvar(); return; }     else if (tipo === "finalizar_individual") { updates = { status: "Finalizado" }; }
+    else if (tipo === "retificar") { await supabase.from("tarefas").insert({ ...tarefa, id: undefined, status: "Pendente", obs: `[Retificação de #${tarefa.id}]: ${valor}`, criado_por: tarefa.criado_por }); setLoading(false); onSalvar(); return; }
     await supabase.from("tarefas").update(updates).eq("id", tarefa.id);
     setLoading(false); onSalvar();
   }
@@ -750,7 +749,7 @@ export default function App() {
       case "participantes": return <span title={t.participantes} style={{ fontSize: 11, color: "#94a3b8", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: colWidths["participantes"] - 24 }}>{t.participantes || "—"}</span>;
       case "status": return <span style={{ background: stStyle.bg, border: `1px solid ${stStyle.border}`, borderRadius: 20, padding: "3px 10px", fontSize: 11, color: stStyle.text, fontWeight: 600, whiteSpace: "nowrap" }}>{t.status}</span>;
       case "situacao": return <span style={{ background: sitStyle.bg, border: `1px solid ${sitStyle.border}`, borderRadius: 20, padding: "3px 10px", fontSize: 11, color: sitStyle.color, fontWeight: 600, whiteSpace: "nowrap" }}>{t.situacaoCalc}</span>;
-      case "acoes": return <OpcoesTarefa tarefa={t} isAdmin={isAdmin} podeEditar={podeEditar} onEditar={abrirEditar} onReplicar={setModalReplicar} onAcao={(tipo, tarefa) => setModalAcao({ tipo, tarefa })} onExcluir={excluir} />;
+      case "acoes": return <OpcoesTarefa tarefa={t} isAdmin={isAdmin} podeEditar={podeEditar} onEditar={abrirEditar} onReplicar={setModalReplicar} onAcao={(tipo, tarefa) => setModalAcao({ tipo, tarefa })} onExcluir={excluir} onAtualizar={carregarTarefas} />;
       default: return null;
     }
   }
