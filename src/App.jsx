@@ -872,7 +872,7 @@ if (obsAtivas.length > 0) {
       // Para obrigações anuais, a competência é o ano-calendário (dezembro do ano atual)
       // mas o prazo de entrega é no ano seguinte
       let prazoAno = ano;
-      let prazoMes = String(ob.mes_prazo || 7).padStart(2, "0");
+      let prazoMes = mes;
       if (ob.periodicidade === "anual") {
         // Prazo cai no ano seguinte usando o mês configurado na obrigação
         prazoAno = String(parseInt(ano) + 1);
