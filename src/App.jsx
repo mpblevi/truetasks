@@ -468,7 +468,7 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
 
 // ─── PAINEL OBRIGAÇÕES PADRÃO ──────────────────────────────────────────────
 function PainelObrigacoes({ obrigacoes, clientes, profiles, onAtualizar, onFechar }) {
-  const [form, setForm] = useState({ tipo: "DCTFWEB", dia_prazo_interno: 15, dia_prazo_legal: 20 });
+  const [form, setForm] = useState({ tipo: "DCTFWEB", dia_prazo_interno: 15, dia_prazo_legal: 20, periodicidade: "mensal" });
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [clienteSel, setClienteSel] = useState(null);
@@ -483,7 +483,7 @@ function PainelObrigacoes({ obrigacoes, clientes, profiles, onAtualizar, onFecha
 
   async function criarObrigacao() {
     setLoading(true);
-    await supabase.from("obrigacoes_padrao").insert({ tipo: form.tipo, dia_prazo_interno: parseInt(form.dia_prazo_interno), dia_prazo_legal: parseInt(form.dia_prazo_legal), ativo: true });
+    await supabase.from("obrigacoes_padrao").insert({ tipo: form.tipo, dia_prazo_interno: parseInt(form.dia_prazo_interno), dia_prazo_legal: parseInt(form.dia_prazo_legal), periodicidade: form.periodicidade, ativo: true });
     setMsg(`Obrigação "${form.tipo}" criada!`);
     onAtualizar(); setLoading(false);
   }
@@ -530,7 +530,7 @@ function PainelObrigacoes({ obrigacoes, clientes, profiles, onAtualizar, onFecha
               <div key={o.id} style={{ background: o.ativo ? "#f0f9ff" : "#f8fafc", border: `1px solid ${o.ativo ? "#bae6fd" : "#e2e8f0"}`, borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <span style={{ background: o.ativo ? "#dce8f7" : "#f1f5f9", color: o.ativo ? "#024aab" : "#94a3b8", borderRadius: 6, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{o.tipo}</span>
-                  <span style={{ fontSize: 12, color: "#64748b" }}>Prazo interno: dia <strong>{o.dia_prazo_interno}</strong> · Legal: dia <strong>{o.dia_prazo_legal}</strong></span>
+                  <span style={{ fontSize: 12, color: "#64748b" }}>Prazo interno: dia <strong>{o.dia_prazo_interno}</strong> · Legal: dia <strong>{o.dia_prazo_legal}</strong> · <strong style={{ color: o.periodicidade === "anual" ? "#7c3aed" : "#024aab" }}>{o.periodicidade === "anual" ? "Anual" : "Mensal"}</strong></span>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button onClick={() => toggleObrigacao(o.id, o.ativo)} style={{ background: o.ativo ? "#fef9c3" : "#dcfce7", border: "none", borderRadius: 7, color: o.ativo ? "#854d0e" : "#15803d", padding: "5px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>{o.ativo ? "Desativar" : "Ativar"}</button>
@@ -544,7 +544,7 @@ function PainelObrigacoes({ obrigacoes, clientes, profiles, onAtualizar, onFecha
         {/* Adicionar nova obrigação */}
         <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20, marginBottom: 24 }}>
           <div style={{ fontWeight: 700, color: "#024aab", marginBottom: 14, fontSize: 14 }}>+ Nova Obrigação Padrão</div>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 12, alignItems: "end" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr auto", gap: 12, alignItems: "end" }}>
             <div>
               <label style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6, display: "block" }}>Tipo</label>
               <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))} style={{ ...{background:"white",border:"1px solid #94a3b8",borderRadius:8,color:"#0f172a",padding:"8px 12px",fontSize:13,width:"100%",outline:"none"} }}>
@@ -561,6 +561,13 @@ function PainelObrigacoes({ obrigacoes, clientes, profiles, onAtualizar, onFecha
               <label style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6, display: "block" }}>Dia Prazo Legal</label>
               <select value={form.dia_prazo_legal} onChange={e => setForm(f => ({ ...f, dia_prazo_legal: e.target.value }))} style={{ background:"white",border:"1px solid #94a3b8",borderRadius:8,color:"#0f172a",padding:"8px 12px",fontSize:13,width:"100%",outline:"none" }}>
                 {DIAS.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6, display: "block" }}>Periodicidade</label>
+              <select value={form.periodicidade} onChange={e => setForm(f => ({ ...f, periodicidade: e.target.value }))} style={{ background:"white",border:"1px solid #94a3b8",borderRadius:8,color:"#0f172a",padding:"8px 12px",fontSize:13,width:"100%",outline:"none" }}>
+                <option value="mensal">Mensal</option>
+                <option value="anual">Anual</option>
               </select>
             </div>
             <button onClick={criarObrigacao} disabled={loading} style={{ background:"linear-gradient(135deg,#024aab,#024aab)",border:"none",borderRadius:8,color:"white",padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer",opacity:loading?0.7:1 }}>Adicionar</button>
