@@ -129,10 +129,16 @@ function GerenciarAcoes({ selecionados, tarefas, profiles, onAtualizar, onLimpar
     { label: "Editar Revisor", key: "revisor" },
     { label: "Editar Status", key: "status" },
     { label: "Editar Vencimento", key: "vencimento" },
+    { label: "Finalizar", key: "finalizar", success: true },
     { label: "Excluir", key: "excluir", danger: true },
   ];
 
   async function executarAcao(tipo, valor, valor2) {
+    if (tipo === "finalizar") {
+      if (!window.confirm(`Finalizar ${selecionados.length} tarefa(s)?`)) return;
+      await supabase.from("tarefas").update({ status: "Finalizado" }).in("id", selecionados);
+      onAtualizar(); onLimpar(); return;
+    }
     if (tipo === "excluir") {
       if (!window.confirm(`Excluir ${selecionados.length} tarefa(s)?`)) return;
       await supabase.from("tarefas").delete().in("id", selecionados);
@@ -172,8 +178,8 @@ function GerenciarAcoes({ selecionados, tarefas, profiles, onAtualizar, onLimpar
           <div style={{ position: "absolute", left: 0, top: "calc(100% + 4px)", background: "white", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 500, minWidth: 200, overflow: "hidden" }}>
             {opcoes.map((o, i) => (
               <button key={i} onClick={() => { setAberto(false); setModalAcao(o.key); }}
-                style={{ display: "block", width: "100%", padding: "10px 16px", fontSize: 13, color: o.danger ? "#dc2626" : "#1e293b", background: "white", border: "none", textAlign: "left", cursor: "pointer", borderBottom: i < opcoes.length - 1 ? "1px solid #f1f5f9" : "none", fontFamily: "'Inter', sans-serif", fontWeight: o.danger ? 600 : 400 }}
-                onMouseEnter={e => e.currentTarget.style.background = o.danger ? "#fee2e2" : "#f8fafc"}
+                style={{ display: "block", width: "100%", padding: "10px 16px", fontSize: 13, color: o.danger ? "#dc2626" : o.success ? "#16a34a" : "#1e293b", background: "white", border: "none", textAlign: "left", cursor: "pointer", borderBottom: i < opcoes.length - 1 ? "1px solid #f1f5f9" : "none", fontFamily: "'Inter', sans-serif", fontWeight: (o.danger || o.success) ? 600 : 400 }}
+                onMouseEnter={e => e.currentTarget.style.background = o.danger ? "#fee2e2" : o.success ? "#dcfce7" : "#f8fafc"}
                 onMouseLeave={e => e.currentTarget.style.background = "white"}>
                 {o.label}
               </button>
@@ -187,7 +193,7 @@ function GerenciarAcoes({ selecionados, tarefas, profiles, onAtualizar, onLimpar
           onFechar={() => setModalAcao(null)}
           onSalvar={(v, v2) => { setModalAcao(null); executarAcao(modalAcao, v, v2); }} />
       )}
-      {modalAcao === "excluir" && (executarAcao("excluir"), setModalAcao(null), null)}
+      {(modalAcao === "excluir" || modalAcao === "finalizar") && (() => { const t = modalAcao; setModalAcao(null); executarAcao(t); })()}
     </>
   );
 }
@@ -272,8 +278,8 @@ function OpcoesTarefa({ tarefa, onEditar, onReplicar, onAcao, onExcluir, isAdmin
       {aberto && (
         <div ref={menuRef} style={{ position: "fixed", top: pos.top, left: pos.left, background: "white", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", zIndex: 9999, minWidth: 190, overflow: "hidden" }}>
           {opcoes.map((o, i) => (
-            <button key={i} onClick={o.action} style={{ display: "block", width: "100%", padding: "9px 16px", fontSize: 13, color: o.danger ? "#dc2626" : "#1e293b", background: "white", border: "none", textAlign: "left", cursor: "pointer", borderBottom: i < opcoes.length - 1 ? "1px solid #f1f5f9" : "none", fontFamily: "'Inter', sans-serif", fontWeight: o.danger ? 600 : 400 }}
-              onMouseEnter={e => e.currentTarget.style.background = o.danger ? "#fee2e2" : "#f8fafc"}
+            <button key={i} onClick={o.action} style={{ display: "block", width: "100%", padding: "9px 16px", fontSize: 13, color: o.danger ? "#dc2626" : o.success ? "#16a34a" : "#1e293b", background: "white", border: "none", textAlign: "left", cursor: "pointer", borderBottom: i < opcoes.length - 1 ? "1px solid #f1f5f9" : "none", fontFamily: "'Inter', sans-serif", fontWeight: (o.danger || o.success) ? 600 : 400 }}
+              onMouseEnter={e => e.currentTarget.style.background = o.danger ? "#fee2e2" : o.success ? "#dcfce7" : "#f8fafc"}
               onMouseLeave={e => e.currentTarget.style.background = "white"}>
               {o.label}
             </button>
@@ -366,6 +372,11 @@ function LoginScreen({ onLogin }) {
 }
 
 // ─── PAINEL CLIENTES ───────────────────────────────────────────────────────
+
+function maskCNPJ(v) {
+  return v.replace(/\D/g,"").replace(/(\d{2})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{4})/,"$1/$2").replace(/(\/\d{4})(\d)/,"$1-$2").slice(0,18);
+}
+
 function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
   const formVazio = { nome: "", cnpj: "", codigo: "", responsavel_id: "", cliente_desde: "" };
   const [modalNovo, setModalNovo] = useState(false);
@@ -437,7 +448,7 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
             {erro && <div style={{ background: "#fee2e2", borderRadius: 8, padding: "8px 12px", color: "#dc2626", fontSize: 13, marginBottom: 12 }}>{erro}</div>}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div><label style={LABEL}>Nome *</label><input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Nome do cliente" style={INPUT} /></div>
-              <div><label style={LABEL}>CNPJ</label><input value={form.cnpj} onChange={e => setForm(f => ({ ...f, cnpj: e.target.value }))} placeholder="00.000.000/0001-00" style={INPUT} /></div>
+              <div><label style={LABEL}>CNPJ</label><input value={form.cnpj} onChange={e => setForm(f => ({ ...f, cnpj: maskCNPJ(e.target.value) }))} placeholder="00.000.000/0001-00" maxLength={18} style={INPUT} /></div>
               <div><label style={LABEL}>Código Interno</label><input value={form.codigo} onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))} placeholder="Ex: 2764" style={INPUT} /></div>
               <div><label style={LABEL}>Responsável padrão</label><select value={form.responsavel_id} onChange={e => setForm(f => ({ ...f, responsavel_id: e.target.value }))} style={INPUT}><option value="">Selecione...</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
               <div><label style={LABEL}>Cliente desde</label><input type="date" value={form.cliente_desde} onChange={e => setForm(f => ({ ...f, cliente_desde: e.target.value }))} style={INPUT} /></div>
