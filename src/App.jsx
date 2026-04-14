@@ -465,6 +465,143 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
   );
 }
 
+
+// ─── PAINEL OBRIGAÇÕES PADRÃO ──────────────────────────────────────────────
+function PainelObrigacoes({ obrigacoes, clientes, profiles, onAtualizar, onFechar }) {
+  const [form, setForm] = useState({ tipo: "DCTFWEB", dia_prazo_interno: 15, dia_prazo_legal: 20 });
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [clienteSel, setClienteSel] = useState(null);
+  const [excecoes, setExcecoes] = useState([]);
+
+  useEffect(() => { carregarExcecoes(); }, []);
+
+  async function carregarExcecoes() {
+    const { data } = await supabase.from("cliente_obrigacoes_excecoes").select("*");
+    setExcecoes(data || []);
+  }
+
+  async function criarObrigacao() {
+    setLoading(true);
+    await supabase.from("obrigacoes_padrao").insert({ tipo: form.tipo, dia_prazo_interno: parseInt(form.dia_prazo_interno), dia_prazo_legal: parseInt(form.dia_prazo_legal), ativo: true });
+    setMsg(`Obrigação "${form.tipo}" criada!`);
+    onAtualizar(); setLoading(false);
+  }
+
+  async function toggleObrigacao(id, ativo) {
+    await supabase.from("obrigacoes_padrao").update({ ativo: !ativo }).eq("id", id);
+    onAtualizar();
+  }
+
+  async function excluirObrigacao(id) {
+    if (!window.confirm("Remover esta obrigação?")) return;
+    await supabase.from("obrigacoes_padrao").delete().eq("id", id);
+    onAtualizar();
+  }
+
+  async function toggleExcecao(clienteId, obrigacaoId) {
+    const existe = excecoes.find(e => e.cliente_id === clienteId && e.obrigacao_id === obrigacaoId);
+    if (existe) {
+      await supabase.from("cliente_obrigacoes_excecoes").delete().eq("id", existe.id);
+    } else {
+      await supabase.from("cliente_obrigacoes_excecoes").insert({ cliente_id: clienteId, obrigacao_id: obrigacaoId });
+    }
+    await carregarExcecoes();
+  }
+
+  const DIAS = Array.from({ length: 28 }, (_, i) => i + 1);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
+      <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 720, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#024aab" }}>Obrigações Padrão</div>
+          <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>
+        </div>
+
+        {msg && <div style={{ background: "#dcfce7", border: "1px solid #22c55e", borderRadius: 8, padding: "10px 14px", color: "#15803d", fontSize: 13, marginBottom: 16 }}>{msg}</div>}
+
+        {/* Lista de obrigações */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Obrigações Cadastradas</div>
+          {obrigacoes.length === 0 && <div style={{ color: "#94a3b8", fontSize: 13, padding: "10px 0" }}>Nenhuma obrigação cadastrada ainda.</div>}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {obrigacoes.map(o => (
+              <div key={o.id} style={{ background: o.ativo ? "#f0f9ff" : "#f8fafc", border: `1px solid ${o.ativo ? "#bae6fd" : "#e2e8f0"}`, borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ background: o.ativo ? "#dce8f7" : "#f1f5f9", color: o.ativo ? "#024aab" : "#94a3b8", borderRadius: 6, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{o.tipo}</span>
+                  <span style={{ fontSize: 12, color: "#64748b" }}>Prazo interno: dia <strong>{o.dia_prazo_interno}</strong> · Legal: dia <strong>{o.dia_prazo_legal}</strong></span>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => toggleObrigacao(o.id, o.ativo)} style={{ background: o.ativo ? "#fef9c3" : "#dcfce7", border: "none", borderRadius: 7, color: o.ativo ? "#854d0e" : "#15803d", padding: "5px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>{o.ativo ? "Desativar" : "Ativar"}</button>
+                  <button onClick={() => excluirObrigacao(o.id)} style={{ background: "#fee2e2", border: "none", borderRadius: 7, color: "#dc2626", padding: "5px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Remover</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Adicionar nova obrigação */}
+        <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20, marginBottom: 24 }}>
+          <div style={{ fontWeight: 700, color: "#024aab", marginBottom: 14, fontSize: 14 }}>+ Nova Obrigação Padrão</div>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 12, alignItems: "end" }}>
+            <div>
+              <label style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6, display: "block" }}>Tipo</label>
+              <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))} style={{ ...{background:"white",border:"1px solid #94a3b8",borderRadius:8,color:"#0f172a",padding:"8px 12px",fontSize:13,width:"100%",outline:"none"} }}>
+                {["DCTFWEB","ECF","ECD","EFD CONTRIBUIÇÕES","EFD FISCAL","EFD REINF","ESOCIAL","FOLHA","IRPF","PGDAS"].map(t => <option key={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6, display: "block" }}>Dia Prazo Interno</label>
+              <select value={form.dia_prazo_interno} onChange={e => setForm(f => ({ ...f, dia_prazo_interno: e.target.value }))} style={{ background:"white",border:"1px solid #94a3b8",borderRadius:8,color:"#0f172a",padding:"8px 12px",fontSize:13,width:"100%",outline:"none" }}>
+                {DIAS.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6, display: "block" }}>Dia Prazo Legal</label>
+              <select value={form.dia_prazo_legal} onChange={e => setForm(f => ({ ...f, dia_prazo_legal: e.target.value }))} style={{ background:"white",border:"1px solid #94a3b8",borderRadius:8,color:"#0f172a",padding:"8px 12px",fontSize:13,width:"100%",outline:"none" }}>
+                {DIAS.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+            <button onClick={criarObrigacao} disabled={loading} style={{ background:"linear-gradient(135deg,#024aab,#024aab)",border:"none",borderRadius:8,color:"white",padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer",opacity:loading?0.7:1 }}>Adicionar</button>
+          </div>
+        </div>
+
+        {/* Exceções por cliente */}
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Exceções por Cliente</div>
+          <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 12 }}>Marque as obrigações que o cliente NÃO precisa cumprir.</div>
+          <select value={clienteSel || ""} onChange={e => setClienteSel(parseInt(e.target.value) || null)}
+            style={{ background:"white",border:"1px solid #94a3b8",borderRadius:8,color:"#0f172a",padding:"8px 12px",fontSize:13,width:"100%",outline:"none",marginBottom:14 }}>
+            <option value="">Selecione um cliente...</option>
+            {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
+          {clienteSel && obrigacoes.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {obrigacoes.map(o => {
+                const isExcecao = excecoes.some(e => e.cliente_id === clienteSel && e.obrigacao_id === o.id);
+                return (
+                  <div key={o.id} onClick={() => toggleExcecao(clienteSel, o.id)}
+                    style={{ background: isExcecao ? "#fee2e2" : "#f0f9ff", border: `1px solid ${isExcecao ? "#fca5a5" : "#bae6fd"}`, borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+                    <div style={{ width: 20, height: 20, borderRadius: 5, border: `2px solid ${isExcecao ? "#dc2626" : "#024aab"}`, background: isExcecao ? "#dc2626" : "white", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {isExcecao && <span style={{ color: "white", fontSize: 13, fontWeight: 700 }}>×</span>}
+                    </div>
+                    <div>
+                      <span style={{ fontWeight: 600, fontSize: 13, color: isExcecao ? "#dc2626" : "#1e293b" }}>{o.tipo}</span>
+                      <span style={{ fontSize: 12, color: "#64748b", marginLeft: 10 }}>{isExcecao ? "Dispensado" : "Obrigado"}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {clienteSel && obrigacoes.length === 0 && <div style={{ color: "#94a3b8", fontSize: 13 }}>Cadastre obrigações padrão primeiro.</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── PAINEL USUÁRIOS ───────────────────────────────────────────────────────
 function PainelUsuarios({ profiles, onAtualizar, onFechar }) {
   const [modalNovo, setModalNovo] = useState(false);
@@ -593,7 +730,8 @@ export default function App() {
 
   const [relatorio, setRelatorio] = useState(false); const [modal, setModal] = useState(false); const [editando, setEditando] = useState(null);
   const [detalhes, setDetalhes] = useState(null);
-  const [painelUsuarios, setPainelUsuarios] = useState(false); const [painelClientes, setPainelClientes] = useState(false);
+  const [painelUsuarios, setPainelUsuarios] = useState(false); const [painelClientes, setPainelClientes] = useState(false); const [painelObrigacoes, setPainelObrigacoes] = useState(false);
+  const [obrigacoes, setObrigacoes] = useState([]); const [excecoes, setExcecoes] = useState([]);
   const [modalReplicar, setModalReplicar] = useState(null); const [modalAcao, setModalAcao] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   const [gerandoRecorrentes, setGerandoRecorrentes] = useState(false);
@@ -637,11 +775,13 @@ export default function App() {
     });
   }, []);
 
-  useEffect(() => { if (!user || !profile) return; carregarTarefas(); carregarProfiles(); carregarClientes(); }, [user, profile]);
+  useEffect(() => { if (!user || !profile) return; carregarTarefas(); carregarProfiles(); carregarClientes(); carregarObrigacoes(); carregarExcecoes(); }, [user, profile]);
 
   async function carregarTarefas() { let q = supabase.from("tarefas").select("*").order("prazo_interno"); if (profile?.cargo !== "admin") q = q.eq("responsavel_id", user.id); const { data } = await q; setTarefas(data || []); }
   async function carregarProfiles() { const { data } = await supabase.from("profiles").select("*"); setProfiles(data || []); }
   async function carregarClientes() { const { data } = await supabase.from("clientes").select("*").order("nome"); setClientes(data || []); }
+  async function carregarObrigacoes() { const { data } = await supabase.from("obrigacoes_padrao").select("*").order("tipo"); setObrigacoes(data || []); }
+  async function carregarExcecoes() { const { data } = await supabase.from("cliente_obrigacoes_excecoes").select("*"); setExcecoes(data || []); }
   async function handleLogout() { await supabase.auth.signOut(); setUser(null); setProfile(null); setTarefas([]); }
 
   function abrirNova() { setEditando(null); setForm({ ...formInicial, responsavel_id: user.id }); setModal(true); }
@@ -667,22 +807,60 @@ export default function App() {
   }
   async function gerarProximoMes() {
     setGerandoRecorrentes(true); setMsgRecorrente("");
+
+    // Recarrega obrigações e exceções atualizadas
+    const { data: obsData } = await supabase.from("obrigacoes_padrao").select("*").eq("ativo", true);
+    const { data: excData } = await supabase.from("cliente_obrigacoes_excecoes").select("*");
+    const obsAtivas = obsData || [];
+    const excAtuais = excData || [];
+
+    // Determina próximo mês baseado nas tarefas existentes
     const todasRecorrentes = tarefas.filter(t => t.recorrente);
-    if (todasRecorrentes.length === 0) { setMsgRecorrente("Nenhuma tarefa recorrente."); setGerandoRecorrentes(false); return; }
-    // Encontra o prazo_interno mais recente entre as recorrentes para evitar duplicatas
-    const maxPrazo = todasRecorrentes.map(t => t.prazo_interno).filter(Boolean).sort().reverse()[0];
-    // Agrupa por chave única (cliente+tipo) e pega só a mais recente de cada
-    const porChave = {};
-    todasRecorrentes.forEach(t => {
-      const chave = t.cliente + "||" + t.tipo;
-      if (!porChave[chave] || t.prazo_interno > porChave[chave].prazo_interno) porChave[chave] = t;
-    });
-    const recorrentes = Object.values(porChave);
+    const maxPrazo = todasRecorrentes.map(t => t.prazo_interno).filter(Boolean).sort().reverse()[0] || today();
     const proximoMes = addMonths(maxPrazo, 1);
-    // Verifica se já existem tarefas geradas para esse próximo mês
-    const jaExiste = tarefas.some(t => t.recorrente && t.prazo_interno && t.prazo_interno.startsWith(proximoMes.substring(0, 7)));
+    const proximoMesStr = proximoMes.substring(0, 7); // YYYY-MM
+
+    // Verifica se já foram geradas
+    const jaExiste = tarefas.some(t => t.recorrente && t.prazo_interno && t.prazo_interno.startsWith(proximoMesStr));
     if (jaExiste) { setMsgRecorrente("Tarefas do próximo mês já foram geradas!"); setGerandoRecorrentes(false); return; }
-    const novas = recorrentes.map(t => ({ cliente: t.cliente, cnpj_cliente: t.cnpj_cliente, codigo_cliente: t.codigo_cliente, tipo: t.tipo, competencia: addMonthsComp(t.competencia, 1), prazo_interno: addMonths(t.prazo_interno, 1), prazo_legal: addMonths(t.prazo_legal, 1), prazo: addMonths(t.prazo_interno, 1), responsavel_id: t.responsavel_id, responsavel_nome: t.responsavel_nome, revisor_id: t.revisor_id, revisor_nome: t.revisor_nome, participantes: t.participantes, status: "Pendente", obs: t.obs, recorrente: true, criado_por: t.criado_por }));
+
+    const novas = [];
+
+    if (obsAtivas.length > 0) {
+      // Gerar baseado nas obrigações padrão para cada cliente
+      for (const cliente of clientes) {
+        const excecoesCliente = excAtuais.filter(e => e.cliente_id === cliente.id).map(e => e.obrigacao_id);
+        const obrigacoesCliente = obsAtivas.filter(o => !excecoesCliente.includes(o.id));
+        const respNome = profiles.find(p => p.id === cliente.responsavel_id)?.nome || "";
+
+        for (const ob of obrigacoesCliente) {
+          // Calcular prazo baseado no dia configurado na obrigação
+          const [ano, mes] = proximoMes.split("-");
+          const diaInt = ob.dia_prazo_interno || 15;
+          const diaLeg = ob.dia_prazo_legal || 20;
+          const prazoInt = `${ano}-${mes}-${String(diaInt).padStart(2, "0")}`;
+          const prazoLeg = `${ano}-${mes}-${String(diaLeg).padStart(2, "0")}`;
+          const comp = `${mes}/${ano}`;
+
+          novas.push({
+            cliente: cliente.nome, cnpj_cliente: cliente.cnpj || "", codigo_cliente: cliente.codigo || "",
+            tipo: ob.tipo, competencia: comp,
+            prazo_interno: prazoInt, prazo_legal: prazoLeg, prazo: prazoInt,
+            responsavel_id: cliente.responsavel_id || null, responsavel_nome: respNome,
+            status: "Pendente", recorrente: true, criado_por: user.id
+          });
+        }
+      }
+    } else {
+      // Fallback: usar tarefas recorrentes existentes
+      const porChave = {};
+      todasRecorrentes.forEach(t => {
+        const chave = t.cliente + "||" + t.tipo;
+        if (!porChave[chave] || t.prazo_interno > porChave[chave].prazo_interno) porChave[chave] = t;
+      });
+      const recorrentes = Object.values(porChave);
+      recorrentes.forEach(t => novas.push({ cliente: t.cliente, cnpj_cliente: t.cnpj_cliente, codigo_cliente: t.codigo_cliente, tipo: t.tipo, competencia: addMonthsComp(t.competencia, 1), prazo_interno: addMonths(t.prazo_interno, 1), prazo_legal: addMonths(t.prazo_legal, 1), prazo: addMonths(t.prazo_interno, 1), responsavel_id: t.responsavel_id, responsavel_nome: t.responsavel_nome, revisor_id: t.revisor_id, revisor_nome: t.revisor_nome, participantes: t.participantes, status: "Pendente", obs: t.obs, recorrente: true, criado_por: t.criado_por }));
+    }
     await supabase.from("tarefas").insert(novas); await carregarTarefas();
     setMsgRecorrente(`${novas.length} tarefa(s) gerada(s)!`); setGerandoRecorrentes(false);
   }
@@ -792,6 +970,7 @@ export default function App() {
       <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
       {painelUsuarios && <PainelUsuarios profiles={profiles} onAtualizar={carregarProfiles} onFechar={() => setPainelUsuarios(false)} />}
+      {painelObrigacoes && <PainelObrigacoes obrigacoes={obrigacoes} clientes={clientes} profiles={profiles} onAtualizar={() => { carregarObrigacoes(); carregarExcecoes(); }} onFechar={() => setPainelObrigacoes(false)} />}
       {painelClientes && <PainelClientes clientes={clientes} profiles={profiles} onAtualizar={carregarClientes} onFechar={() => setPainelClientes(false)} />}
       {modalReplicar && <ModalReplicar tarefa={modalReplicar} clientes={clientes} profiles={profiles} onFechar={() => setModalReplicar(null)} onConcluir={async (n) => { setModalReplicar(null); await carregarTarefas(); setMsgReplicar(`${n} tarefa(s) replicada(s)!`); setTimeout(() => setMsgReplicar(""), 4000); }} />}
       {modalAcao && <ModalAcao tipo={modalAcao.tipo} tarefa={modalAcao.tarefa} profiles={profiles} onFechar={() => setModalAcao(null)} onSalvar={async () => { setModalAcao(null); await carregarTarefas(); }} />}
@@ -818,6 +997,7 @@ export default function App() {
           <div style={{ textAlign: "right" }}><div style={{ fontSize: 14, fontWeight: 600, color: "white" }}>{profile.nome}</div><div style={{ fontSize: 11, color: isAdmin ? "#fde68a" : "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: 1 }}>{isAdmin ? "Admin" : "Colaborador"}</div></div>
           {isAdmin && (<>
             <button onClick={() => setPainelClientes(true)} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Clientes</button>
+              <button onClick={() => setPainelObrigacoes(true)} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Obrigações</button>
             <button onClick={() => setPainelUsuarios(true)} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Usuários</button>
             <button onClick={gerarProximoMes} disabled={gerandoRecorrentes} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, opacity: gerandoRecorrentes ? 0.7 : 1 }}>Gerar Próximo Mês</button>
             <button onClick={abrirNova} style={{ background: "white", border: "none", borderRadius: 8, color: "#272e40", padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Nova Tarefa</button>
