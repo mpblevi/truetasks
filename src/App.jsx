@@ -1184,22 +1184,40 @@ export default function App() {
   const tarefasEnriquecidas = tarefas.map(t => ({ ...t, situacaoCalc: calcSituacaoAuto(t.prazo_interno, t.prazo_legal, t.status) }));
   const uniq = (arr) => ["Todos", ...Array.from(new Set(arr.filter(Boolean))).sort()];
 
-  const filtradas = useMemo(() => tarefasEnriquecidas.filter(t => {
-    if (fCliente !== "Todos" && t.cliente !== fCliente) return false;
-    if (fCodigo !== "Todos" && t.codigo_cliente !== fCodigo) return false;
-    if (fCnpj !== "Todos" && t.cnpj_cliente !== fCnpj) return false;
-    if (fComp !== "Todos" && t.competencia !== fComp) return false;
-    if (fTipo !== "Todos" && t.tipo !== fTipo) return false;
-    if (fPrazoInt) { const d = parseDate(fPrazoInt); if (d && t.prazo_interno !== d) return false; }
-    if (fPrazoLeg) { const d = parseDate(fPrazoLeg); if (d && t.prazo_legal !== d) return false; }
-    if (fResp !== "Todos" && t.responsavel_nome !== fResp) return false;
-    if (fRevisor !== "Todos" && t.revisor_nome !== fRevisor) return false;
-    if (fPart && !(t.participantes || "").toLowerCase().includes(fPart.toLowerCase())) return false;
-    if (fStatus !== "Todos" && t.status !== fStatus) return false;
-    if (fSituacao !== "Todos" && t.situacaoCalc !== fSituacao) return false;
-    if (esconderFinalizados && t.status === "Finalizado") return false;
-    return true;
-  }), [tarefasEnriquecidas, fCliente, fCnpj, fComp, fTipo, fPrazoInt, fPrazoLeg, fResp, fRevisor, fPart, fStatus, fSituacao, esconderFinalizados]);
+  const [sortKey, setSortKey] = useState(null);
+  const [sortDir, setSortDir] = useState("asc");
+
+  function toggleSort(key) {
+    if (key === "acoes") return;
+    setSortKey(k => { if (k === key) { setSortDir(d => d === "asc" ? "desc" : "asc"); return key; } setSortDir("asc"); return key; });
+  }
+
+  const filtradas = useMemo(() => {
+    const base = tarefasEnriquecidas.filter(t => {
+      if (fCliente !== "Todos" && t.cliente !== fCliente) return false;
+      if (fCodigo !== "Todos" && t.codigo_cliente !== fCodigo) return false;
+      if (fCnpj !== "Todos" && t.cnpj_cliente !== fCnpj) return false;
+      if (fComp !== "Todos" && t.competencia !== fComp) return false;
+      if (fTipo !== "Todos" && t.tipo !== fTipo) return false;
+      if (fPrazoInt) { const d = parseDate(fPrazoInt); if (d && t.prazo_interno !== d) return false; }
+      if (fPrazoLeg) { const d = parseDate(fPrazoLeg); if (d && t.prazo_legal !== d) return false; }
+      if (fResp !== "Todos" && t.responsavel_nome !== fResp) return false;
+      if (fRevisor !== "Todos" && t.revisor_nome !== fRevisor) return false;
+      if (fPart && !(t.participantes || "").toLowerCase().includes(fPart.toLowerCase())) return false;
+      if (fStatus !== "Todos" && t.status !== fStatus) return false;
+      if (fSituacao !== "Todos" && t.situacaoCalc !== fSituacao) return false;
+      if (esconderFinalizados && t.status === "Finalizado") return false;
+      return true;
+    });
+    if (!sortKey) return base;
+    const map = { cliente: "cliente", codigo: "codigo_cliente", cnpj: "cnpj_cliente", competencia: "competencia", tipo: "tipo", prazo_interno: "prazo_interno", prazo_legal: "prazo_legal", responsavel: "responsavel_nome", revisor: "revisor_nome", participantes: "participantes", status: "status", situacao: "situacaoCalc" };
+    const field = map[sortKey] || sortKey;
+    return [...base].sort((a, b) => {
+      const va = (a[field] || "").toString().toLowerCase();
+      const vb = (b[field] || "").toString().toLowerCase();
+      return sortDir === "asc" ? va.localeCompare(vb) : vb.localeCompare(va);
+    });
+  }, [tarefasEnriquecidas, fCliente, fCnpj, fComp, fCodigo, fTipo, fPrazoInt, fPrazoLeg, fResp, fRevisor, fPart, fStatus, fSituacao, esconderFinalizados, sortKey, sortDir]);
 
   const sitStats = useMemo(() => {
     const s = { "Vencendo Hoje": 0, "A Vencer": 0, "Vencido Internamente": 0, "Vencido Legalmente": 0 };
@@ -1348,8 +1366,9 @@ export default function App() {
                 </th>
                 {cols.map(c => (
                   <th key={c.key} draggable onDragStart={() => onDragStart(c.key)} onDragOver={e => { e.preventDefault(); onDragOverCol(c.key); }} onDrop={() => onDrop(c.key)}
-                    style={{ padding: "8px 12px 4px", textAlign: "center", fontSize: 11, color: "#64748b", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", whiteSpace: "nowrap", position: "relative", cursor: "grab", background: dragOver === c.key ? "#dce8f7" : "transparent", userSelect: "none" }}>
-                    {c.label}
+                    onClick={() => toggleSort(c.key)}
+                    style={{ padding: "8px 12px 4px", textAlign: "center", fontSize: 11, color: "#64748b", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", whiteSpace: "nowrap", position: "relative", cursor: c.key === "acoes" ? "grab" : "pointer", background: dragOver === c.key ? "#dce8f7" : "transparent", userSelect: "none" }}>
+                    {c.label}{sortKey === c.key ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
                     {c.key !== "acoes" && (
                       <div onMouseDown={e => onResizeStart(e, c.key)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 6, cursor: "col-resize", background: "transparent", zIndex: 10 }}
                         onMouseEnter={e => e.currentTarget.style.background = "#b3cfee"}
