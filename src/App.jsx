@@ -1232,7 +1232,7 @@ export default function App() {
           ))}
           <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             {(() => { const n = [fCliente,fCodigo,fCnpj,fComp,fTipo,fResp,fRevisor,fStatus,fSituacao].filter(f=>f!=="Todos").length + (fPrazoInt?1:0) + (fPrazoLeg?1:0) + (fPart?1:0); return n > 0 ? <button onClick={() => { setFCliente("Todos"); setFCodigo("Todos"); setFCnpj("Todos"); setFComp("Todos"); setFTipo("Todos"); setFPrazoInt(""); setFPrazoLeg(""); setFResp("Todos"); setFRevisor("Todos"); setFPart(""); setFStatus("Todos"); setFSituacao("Todos"); }} style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 8, color: "#dc2626", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>✕ {n} filtro(s) ativo(s)</button> : null; })()}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569", fontWeight: 600 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#272e40", fontWeight: 600, marginRight: 4 }}>
                 <span style={{ width: 28, height: 16, background: esconderFinalizados ? "#272e40" : "#cbd5e1", borderRadius: 10, display: "inline-flex", alignItems: "center", padding: "0 2px", transition: "background .2s", flexShrink: 0, cursor: "pointer" }} onClick={() => setEsconderFinalizados(v => !v)}>
                   <span style={{ width: 12, height: 12, background: "white", borderRadius: "50%", display: "block", transform: esconderFinalizados ? "translateX(12px)" : "translateX(0)", transition: "transform .2s" }} />
                 </span>
