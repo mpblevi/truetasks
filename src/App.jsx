@@ -1215,7 +1215,9 @@ export default function App() {
     return [...base].sort((a, b) => {
       const va = (a[field] || "").toString().toLowerCase();
       const vb = (b[field] || "").toString().toLowerCase();
-      return sortDir === "asc" ? va.localeCompare(vb) : vb.localeCompare(va);
+      const na = parseFloat(va); const nb = parseFloat(vb);
+      if (!isNaN(na) && !isNaN(nb)) return sortDir === "asc" ? na - nb : nb - na;
+      return sortDir === "asc" ? va.localeCompare(vb, "pt-BR", { numeric: true }) : vb.localeCompare(va, "pt-BR", { numeric: true });
     });
   }, [tarefasEnriquecidas, fCliente, fCnpj, fComp, fCodigo, fTipo, fPrazoInt, fPrazoLeg, fResp, fRevisor, fPart, fStatus, fSituacao, esconderFinalizados, sortKey, sortDir]);
 
