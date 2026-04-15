@@ -70,8 +70,10 @@ function parseDate(str) {
   return `${yyyy}-${mm}-${dd}`;
 }
 function addMonths(dateStr, n) {
-  const d = new Date(dateStr); d.setMonth(d.getMonth() + n);
-  return d.toISOString().split("T")[0];
+  if (!dateStr) return dateStr;
+  const [yyyy, mm, dd] = dateStr.split("-").map(Number);
+  const d = new Date(yyyy, mm - 1 + n, dd || 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 function addMonthsComp(comp, n) {
   if (!comp) return comp;
