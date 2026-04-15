@@ -1222,18 +1222,18 @@ export default function App() {
   function renderFiltro(key) {
     const smStyle = { background: "white", border: "1px solid #e2e8f0", borderRadius: 5, color: "#475569", padding: "4px 6px", fontSize: 11, width: "100%", outline: "none", fontFamily: "'Inter', sans-serif" };
     switch (key) {
-      case "cliente":      return <ComboFiltro value={fCliente} onChange={setFCliente} opcoes={uniq(tarefasEnriquecidas.map(t => t.cliente)).slice(1)} placeholder="Filtrar cliente..." smStyle={smStyle} />;
-      case "codigo":       return <ComboFiltro value={fCodigo} onChange={setFCodigo} opcoes={uniq(tarefasEnriquecidas.map(t => t.codigo_cliente)).filter(Boolean).slice(1)} placeholder="Filtrar código..." smStyle={smStyle} />;
-      case "cnpj":         return <ComboFiltro value={fCnpj} onChange={setFCnpj} opcoes={uniq(tarefasEnriquecidas.map(t => t.cnpj_cliente)).filter(Boolean).slice(1)} placeholder="Filtrar CNPJ..." smStyle={smStyle} />;
-      case "competencia":  return <ComboFiltro value={fComp} onChange={setFComp} opcoes={uniq(tarefasEnriquecidas.map(t => t.competencia)).filter(Boolean).slice(1)} placeholder="Filtrar comp..." smStyle={smStyle} />;
-      case "tipo":         return <ComboFiltro value={fTipo} onChange={setFTipo} opcoes={TIPOS} placeholder="Filtrar tipo..." smStyle={smStyle} />;
+      case "cliente":      return <ComboFiltro value={fCliente} onChange={setFCliente} opcoes={uniq(tarefasEnriquecidas.map(t => t.cliente)).slice(1)} placeholder="Cliente" smStyle={smStyle} />;
+      case "codigo":       return <ComboFiltro value={fCodigo} onChange={setFCodigo} opcoes={uniq(tarefasEnriquecidas.map(t => t.codigo_cliente)).filter(Boolean).slice(1)} placeholder="Código" smStyle={smStyle} />;
+      case "cnpj":         return <ComboFiltro value={fCnpj} onChange={setFCnpj} opcoes={uniq(tarefasEnriquecidas.map(t => t.cnpj_cliente)).filter(Boolean).slice(1)} placeholder="CNPJ" smStyle={smStyle} />;
+      case "competencia":  return <ComboFiltro value={fComp} onChange={setFComp} opcoes={uniq(tarefasEnriquecidas.map(t => t.competencia)).filter(Boolean).slice(1)} placeholder="Competência" smStyle={smStyle} />;
+      case "tipo":         return <ComboFiltro value={fTipo} onChange={setFTipo} opcoes={TIPOS} placeholder="Tipo" smStyle={smStyle} />;
       case "prazo_interno":return <DateFiltro value={fPrazoInt} onChange={setFPrazoInt} smStyle={smStyle} />;
       case "prazo_legal":  return <DateFiltro value={fPrazoLeg} onChange={setFPrazoLeg} smStyle={smStyle} />;
-      case "responsavel":  return <ComboFiltro value={fResp} onChange={setFResp} opcoes={uniq(tarefasEnriquecidas.map(t => t.responsavel_nome)).filter(Boolean).slice(1)} placeholder="Filtrar resp..." smStyle={smStyle} />;
-      case "revisor":      return <ComboFiltro value={fRevisor} onChange={setFRevisor} opcoes={uniq(tarefasEnriquecidas.map(t => t.revisor_nome)).filter(Boolean).slice(1)} placeholder="Filtrar revisor..." smStyle={smStyle} />;
-      case "participantes":return <ComboFiltro value={fPart === "" ? "Todos" : fPart} onChange={v => setFPart(v === "Todos" ? "" : v)} opcoes={[...new Set(tarefasEnriquecidas.flatMap(t => (t.participantes || "").split(",").map(p => p.trim()).filter(Boolean)))]} placeholder="Filtrar part..." smStyle={smStyle} />;
-      case "status":       return <ComboFiltro value={fStatus} onChange={setFStatus} opcoes={STATUS_LIST} placeholder="Filtrar status..." smStyle={smStyle} />;
-      case "situacao":     return <ComboFiltro value={fSituacao} onChange={setFSituacao} opcoes={SITUACAO_LIST} placeholder="Filtrar situação..." smStyle={smStyle} />;
+      case "responsavel":  return <ComboFiltro value={fResp} onChange={setFResp} opcoes={uniq(tarefasEnriquecidas.map(t => t.responsavel_nome)).filter(Boolean).slice(1)} placeholder="Responsável" smStyle={smStyle} />;
+      case "revisor":      return <ComboFiltro value={fRevisor} onChange={setFRevisor} opcoes={uniq(tarefasEnriquecidas.map(t => t.revisor_nome)).filter(Boolean).slice(1)} placeholder="Revisor" smStyle={smStyle} />;
+      case "participantes":return <ComboFiltro value={fPart === "" ? "Todos" : fPart} onChange={v => setFPart(v === "Todos" ? "" : v)} opcoes={[...new Set(tarefasEnriquecidas.flatMap(t => (t.participantes || "").split(",").map(p => p.trim()).filter(Boolean)))]} placeholder="Participantes" smStyle={smStyle} />;
+      case "status":       return <ComboFiltro value={fStatus} onChange={setFStatus} opcoes={STATUS_LIST} placeholder="Status" smStyle={smStyle} />;
+      case "situacao":     return <ComboFiltro value={fSituacao} onChange={setFSituacao} opcoes={SITUACAO_LIST} placeholder="Situação" smStyle={smStyle} />;
       default: return null;
     }
   }
@@ -1325,7 +1325,7 @@ export default function App() {
                 </th>
                 {cols.map(c => (
                   <th key={c.key} draggable onDragStart={() => onDragStart(c.key)} onDragOver={e => { e.preventDefault(); onDragOverCol(c.key); }} onDrop={() => onDrop(c.key)}
-                    style={{ padding: "8px 12px 4px", textAlign: "left", fontSize: 11, color: "#64748b", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", whiteSpace: "nowrap", position: "relative", cursor: "grab", background: dragOver === c.key ? "#dce8f7" : "transparent", userSelect: "none" }}>
+                    style={{ padding: "8px 12px 4px", textAlign: "center", fontSize: 11, color: "#64748b", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", whiteSpace: "nowrap", position: "relative", cursor: "grab", background: dragOver === c.key ? "#dce8f7" : "transparent", userSelect: "none" }}>
                     {c.label}
                     {c.key !== "acoes" && (
                       <div onMouseDown={e => onResizeStart(e, c.key)} style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 6, cursor: "col-resize", background: "transparent", zIndex: 10 }}
