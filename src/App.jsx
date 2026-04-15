@@ -1220,7 +1220,7 @@ export default function App() {
 
   // Renderizar filtro por chave
   function renderFiltro(key) {
-    const smStyle = { background: "white", border: "1px solid #e2e8f0", borderRadius: 5, color: "#475569", padding: "4px 6px", fontSize: 11, width: "100%", outline: "none", fontFamily: "'Inter', sans-serif" };
+    const smStyle = { background: "white", border: "1px solid #e2e8f0", borderRadius: 5, color: "#475569", padding: "4px 6px", fontSize: 11, width: "100%", outline: "none", fontFamily: "'Inter', sans-serif", textAlign: "center" };
     switch (key) {
       case "cliente":      return <ComboFiltro value={fCliente} onChange={setFCliente} opcoes={uniq(tarefasEnriquecidas.map(t => t.cliente)).slice(1)} placeholder="Cliente" smStyle={smStyle} />;
       case "codigo":       return <ComboFiltro value={fCodigo} onChange={setFCodigo} opcoes={uniq(tarefasEnriquecidas.map(t => t.codigo_cliente)).filter(Boolean).slice(1)} placeholder="Código" smStyle={smStyle} />;
