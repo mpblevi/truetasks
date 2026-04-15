@@ -1360,7 +1360,7 @@ export default function App() {
                       <input type="checkbox" checked={sel} onChange={() => toggleSel(t.id)} style={{ width: 15, height: 15, cursor: "pointer" }} />
                     </td>
                     {cols.map(c => (
-                      <td key={c.key} style={{ padding: "10px 12px", overflow: "hidden" }}>
+                      <td key={c.key} style={{ padding: "10px 12px", overflow: "hidden", textAlign: "center" }}>
                         {renderCell(c.key, t)}
                       </td>
                     ))}
