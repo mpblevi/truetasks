@@ -617,6 +617,7 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
   const [form, setForm] = useState(formVazio);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(""); const [msg, setMsg] = useState(""); const [busca, setBusca] = useState("");
+  const [mostrarInativos, setMostrarInativos] = useState(false);
 
   function abrirEditar(c) {
     setEditandoId(c.id);
@@ -632,10 +633,17 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
       await supabase.from("clientes").update(payload).eq("id", editandoId);
       setMsg(`Cliente "${form.nome}" atualizado!`);
     } else {
-      await supabase.from("clientes").insert(payload);
+      await supabase.from("clientes").insert({ ...payload, ativo: true });
       setMsg(`Cliente "${form.nome}" criado!`);
     }
     setForm(formVazio); setEditandoId(null); setModalNovo(false); onAtualizar(); setLoading(false);
+  }
+
+  async function toggleAtivo(c) {
+    const novoAtivo = !(c.ativo !== false);
+    await supabase.from("clientes").update({ ativo: novoAtivo }).eq("id", c.id);
+    setMsg(`Cliente "${c.nome}" ${novoAtivo ? "ativado" : "inativado"}!`);
+    onAtualizar();
   }
 
   async function excluirCliente(id, nome) {
@@ -643,7 +651,11 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
     await supabase.from("clientes").delete().eq("id", id); onAtualizar();
   }
 
-  const filtrados = clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase()) || (c.cnpj || "").includes(busca));
+  const filtrados = clientes
+    .filter(c => mostrarInativos ? true : c.ativo !== false)
+    .filter(c => c.nome.toLowerCase().includes(busca.toLowerCase()) || (c.cnpj || "").includes(busca));
+
+  const totalInativos = clientes.filter(c => c.ativo === false).length;
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
@@ -653,13 +665,23 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
           <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>
         </div>
         {msg && <div style={{ background: "#dcfce7", border: "1px solid #22c55e", borderRadius: 8, padding: "10px 14px", color: "#15803d", fontSize: 13, marginBottom: 16 }}>{msg}</div>}
-        <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar por nome ou CNPJ..." style={{ ...INPUT, marginBottom: 16 }} />
+        <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
+          <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar por nome ou CNPJ..." style={{ ...INPUT, marginBottom: 0, flex: 1 }} />
+          {totalInativos > 0 && (
+            <button onClick={() => setMostrarInativos(v => !v)} style={{ background: mostrarInativos ? "#fee2e2" : "#f1f5f9", border: `1px solid ${mostrarInativos ? "#fca5a5" : "#e2e8f0"}`, borderRadius: 8, color: mostrarInativos ? "#dc2626" : "#64748b", padding: "10px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
+              {mostrarInativos ? `Ocultar inativos (${totalInativos})` : `Ver inativos (${totalInativos})`}
+            </button>
+          )}
+        </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20, maxHeight: 300, overflowY: "auto" }}>
-          {filtrados.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Nenhum cliente cadastrado.</div>}
-          {filtrados.map(c => { const resp = profiles.find(p => p.id === c.responsavel_id); const rev = profiles.find(p => p.id === c.revisor_id); return (
-            <div key={c.id} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          {filtrados.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Nenhum cliente encontrado.</div>}
+          {filtrados.map(c => { const resp = profiles.find(p => p.id === c.responsavel_id); const rev = profiles.find(p => p.id === c.revisor_id); const ativo = c.ativo !== false; return (
+            <div key={c.id} style={{ background: ativo ? "#f8fafc" : "#fafafa", border: `1px solid ${ativo ? "#e2e8f0" : "#f1c7c7"}`, borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", opacity: ativo ? 1 : 0.7 }}>
               <div>
-                <div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{c.nome}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontWeight: 600, color: ativo ? "#1e293b" : "#94a3b8", fontSize: 14 }}>{c.nome}</span>
+                  {!ativo && <span style={{ background: "#fee2e2", color: "#dc2626", borderRadius: 4, padding: "1px 6px", fontSize: 11, fontWeight: 700 }}>Inativo</span>}
+                </div>
                 <div style={{ fontSize: 12, color: "#64748b", marginTop: 2, display: "flex", gap: 12, flexWrap: "wrap" }}>
                   {c.codigo && <span style={{ background: "#dce8f7", color: "#024aab", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>#{c.codigo}</span>}
                   {c.cnpj && <span style={{ fontFamily: "monospace" }}>{c.cnpj}</span>}
@@ -669,6 +691,7 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                <button onClick={() => toggleAtivo(c)} style={{ background: ativo ? "#fef9c3" : "#dcfce7", border: "none", borderRadius: 8, color: ativo ? "#854d0e" : "#15803d", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>{ativo ? "Inativar" : "Ativar"}</button>
                 <button onClick={() => abrirEditar(c)} style={{ background: "#dce8f7", border: "none", borderRadius: 8, color: "#024aab", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Editar</button>
                 <button onClick={() => excluirCliente(c.id, c.nome)} style={{ background: "#fee2e2", border: "none", borderRadius: 8, color: "#dc2626", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Remover</button>
               </div>
@@ -828,7 +851,7 @@ function PainelObrigacoes({ clientes, profiles, onAtualizar, onFechar }) {
           <select value={clienteSel || ""} onChange={e => setClienteSel(parseInt(e.target.value) || null)}
             style={{ background:"white",border:"1px solid #94a3b8",borderRadius:8,color:"#0f172a",padding:"8px 12px",fontSize:13,width:"100%",outline:"none",marginBottom:14 }}>
             <option value="">Selecione um cliente...</option>
-            {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+            {clientes.filter(c => c.ativo !== false).map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
           </select>
           {clienteSel && obrigacoes.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1203,7 +1226,7 @@ export default function App() {
     switch (key) {
       case "cliente": return <span style={{ fontWeight: 600, fontSize: 13, color: "#1e293b" }}>{t.cliente}</span>;
       case "codigo": return <span style={{ background: "#dce8f7", color: "#024aab", borderRadius: 5, padding: "2px 7px", fontSize: 11, fontWeight: 700 }}>{t.codigo_cliente || "—"}</span>;
-      case "cnpj": return <span style={{ fontSize: 11, color: "#64748b", fontFamily: "monospace" }}>{t.cnpj_cliente || "—"}</span>;
+      case "cnpj": return <span style={{ fontSize: 13, color: "#64748b", fontFamily: "monospace" }}>{t.cnpj_cliente || "—"}</span>;
       case "competencia": return t.competencia ? <span style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", fontSize: 11, color: "#475569", fontWeight: 600 }}>{t.competencia}</span> : <span style={{ color: "#94a3b8" }}>—</span>;
       case "tipo": return <span style={{ background: "#dce8f7", borderRadius: 6, padding: "2px 8px", fontSize: 11, color: "#024aab", fontWeight: 600 }}>{t.tipo}</span>;
       case "prazo_interno": return <span style={{ fontSize: 12, color: iAtrasado ? "#dc2626" : "#475569", fontWeight: iAtrasado ? 700 : 400 }}>{formatDate(t.prazo_interno)}</span>;
@@ -1380,7 +1403,7 @@ export default function App() {
             <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#024aab", marginBottom: 24 }}>{editando ? "Editar Tarefa" : "Nova Tarefa"}</div>
             {clientes.length === 0 && <div style={{ background: "#fef9c3", border: "1px solid #eab308", borderRadius: 8, padding: "10px 14px", color: "#854d0e", fontSize: 13, marginBottom: 16 }}>Nenhum cliente cadastrado. Cadastre clientes antes.</div>}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <div style={{ gridColumn: "1/-1" }}><label style={LABEL}>Cliente *</label><select value={form.cliente_id} onChange={e => { const c = clientes.find(c => c.id === parseInt(e.target.value)); setForm(f => ({ ...f, cliente_id: e.target.value, responsavel_id: c?.responsavel_id || f.responsavel_id })); }} style={INPUT}><option value="">Selecione o cliente...</option>{clientes.map(c => <option key={c.id} value={c.id}>{c.nome}{c.cnpj ? ` — ${c.cnpj}` : ""}</option>)}</select></div>
+              <div style={{ gridColumn: "1/-1" }}><label style={LABEL}>Cliente *</label><select value={form.cliente_id} onChange={e => { const c = clientes.find(c => c.id === parseInt(e.target.value)); setForm(f => ({ ...f, cliente_id: e.target.value, responsavel_id: c?.responsavel_id || f.responsavel_id })); }} style={INPUT}><option value="">Selecione o cliente...</option>{clientes.filter(c => c.ativo !== false).map(c => <option key={c.id} value={c.id}>{c.nome}{c.cnpj ? ` — ${c.cnpj}` : ""}</option>)}</select></div>
               <div><label style={LABEL}>Tipo</label><select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))} style={INPUT}>{TIPOS.map(t => <option key={t}>{t}</option>)}</select></div>
               <div><label style={LABEL}>Competência</label><select value={form.competencia} onChange={e => setForm(f => ({ ...f, competencia: e.target.value }))} style={INPUT}>{COMPETENCIAS.map(c => <option key={c}>{c}</option>)}</select></div>
               <div><label style={LABEL}>Responsável</label><select value={form.responsavel_id} onChange={e => setForm(f => ({ ...f, responsavel_id: e.target.value }))} style={INPUT}><option value="">Selecione...</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
