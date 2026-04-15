@@ -629,36 +629,39 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
 
 
 // ─── PAINEL OBRIGAÇÕES PADRÃO ──────────────────────────────────────────────
-function PainelObrigacoes({ obrigacoes, clientes, profiles, onAtualizar, onFechar }) {
+function PainelObrigacoes({ clientes, profiles, onAtualizar, onFechar }) {
+  const [obrigacoes, setObrigacoes] = useState([]);
   const [form, setForm] = useState({ tipo: "DCTFWEB", dia_prazo_interno: 15, dia_prazo_legal: 20, periodicidade: "mensal", mes_prazo: 7 });
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [clienteSel, setClienteSel] = useState(null);
   const [excecoes, setExcecoes] = useState([]);
 
-  useEffect(() => { carregarExcecoes(); }, []);
+  useEffect(() => { carregar(); }, []);
 
-  async function carregarExcecoes() {
-    const { data } = await supabase.from("cliente_obrigacoes_excecoes").select("*");
-    setExcecoes(data || []);
+  async function carregar() {
+    const { data } = await supabase.from("obrigacoes_padrao").select("*").order("tipo");
+    setObrigacoes(data || []);
+    const { data: exc } = await supabase.from("cliente_obrigacoes_excecoes").select("*");
+    setExcecoes(exc || []);
   }
 
   async function criarObrigacao() {
     setLoading(true);
     await supabase.from("obrigacoes_padrao").insert({ tipo: form.tipo, dia_prazo_interno: parseInt(form.dia_prazo_interno), dia_prazo_legal: parseInt(form.dia_prazo_legal), periodicidade: form.periodicidade, mes_prazo: form.periodicidade === "anual" ? parseInt(form.mes_prazo) : null, ativo: true });
     setMsg(`Obrigação "${form.tipo}" criada!`);
-    onAtualizar(); setLoading(false);
+    await carregar(); onAtualizar(); setLoading(false);
   }
 
   async function toggleObrigacao(id, ativo) {
     await supabase.from("obrigacoes_padrao").update({ ativo: !ativo }).eq("id", id);
-    onAtualizar();
+    await carregar(); onAtualizar();
   }
 
   async function excluirObrigacao(id) {
     if (!window.confirm("Remover esta obrigação?")) return;
     await supabase.from("obrigacoes_padrao").delete().eq("id", id);
-    onAtualizar();
+    await carregar(); onAtualizar();
   }
 
   async function toggleExcecao(clienteId, obrigacaoId) {
@@ -668,7 +671,7 @@ function PainelObrigacoes({ obrigacoes, clientes, profiles, onAtualizar, onFecha
     } else {
       await supabase.from("cliente_obrigacoes_excecoes").insert({ cliente_id: clienteId, obrigacao_id: obrigacaoId });
     }
-    await carregarExcecoes();
+    await carregar();
   }
 
   const DIAS = Array.from({ length: 28 }, (_, i) => i + 1);
@@ -1167,7 +1170,7 @@ export default function App() {
       <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
       {painelUsuarios && <PainelUsuarios profiles={profiles} onAtualizar={carregarProfiles} onFechar={() => setPainelUsuarios(false)} />}
-      {painelObrigacoes && <PainelObrigacoes obrigacoes={obrigacoes} clientes={clientes} profiles={profiles} onAtualizar={() => { carregarObrigacoes(); carregarExcecoes(); }} onFechar={() => setPainelObrigacoes(false)} />}
+      {painelObrigacoes && <PainelObrigacoes clientes={clientes} profiles={profiles} onAtualizar={() => { carregarObrigacoes(); carregarExcecoes(); }} onFechar={() => setPainelObrigacoes(false)} />}
       {painelClientes && <PainelClientes clientes={clientes} profiles={profiles} onAtualizar={carregarClientes} onFechar={() => setPainelClientes(false)} />}
       {modalReplicar && <ModalReplicar tarefa={modalReplicar} clientes={clientes} profiles={profiles} onFechar={() => setModalReplicar(null)} onConcluir={async (n) => { setModalReplicar(null); await carregarTarefas(); setMsgReplicar(`${n} tarefa(s) replicada(s)!`); setTimeout(() => setMsgReplicar(""), 4000); }} />}
       {modalAcao && <ModalAcao tipo={modalAcao.tipo} tarefa={modalAcao.tarefa} profiles={profiles} onFechar={() => setModalAcao(null)} onSalvar={async () => { setModalAcao(null); await carregarTarefas(); }} />}
