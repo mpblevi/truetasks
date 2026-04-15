@@ -994,10 +994,20 @@ export default function App() {
     const obsAtivas = obsData || [];
     const excAtuais = excData || [];
 
-    // Determina próximo mês baseado nas tarefas existentes
+    // Determina próximo mês baseado na competência das tarefas existentes
     const todasRecorrentes = tarefas.filter(t => t.recorrente);
-    const maxPrazo = todasRecorrentes.map(t => t.prazo_interno).filter(Boolean).sort().reverse()[0] || today();
-    const proximoMes = addMonths(maxPrazo, 1);
+
+    // Converte competencia "MM/YYYY" para "YYYY-MM" para ordenar
+    const competencias = todasRecorrentes
+      .map(t => t.competencia)
+      .filter(Boolean)
+      .map(c => { const [m, a] = c.split("/"); return a && m ? `${a}-${m.padStart(2,"0")}` : null; })
+      .filter(Boolean)
+      .sort()
+      .reverse();
+
+    const maxCompetencia = competencias[0] || today().substring(0, 7);
+    const proximoMes = addMonths(maxCompetencia + "-01", 1);
     const proximoMesStr = proximoMes.substring(0, 7); // YYYY-MM
 
     // Verifica se já foram geradas
