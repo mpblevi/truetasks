@@ -345,6 +345,74 @@ function ModalAcao({ tipo, tarefa, profiles, onFechar, onSalvar }) {
   );
 }
 
+// ─── COMBO FILTRO (digitável + dropdown) ──────────────────────────────────
+function ComboFiltro({ value, onChange, opcoes, placeholder = "Filtrar...", smStyle }) {
+  const [aberto, setAberto] = useState(false);
+  const [texto, setTexto] = useState(value === "Todos" ? "" : value);
+  const ref = useRef(null);
+  useEffect(() => { setTexto(value === "Todos" ? "" : value); }, [value]);
+  useEffect(() => {
+    function fechar(e) { if (ref.current && !ref.current.contains(e.target)) setAberto(false); }
+    document.addEventListener("mousedown", fechar);
+    return () => document.removeEventListener("mousedown", fechar);
+  }, []);
+  const filtradas = opcoes.filter(o => String(o).toLowerCase().includes(texto.toLowerCase()));
+  return (
+    <div ref={ref} style={{ position: "relative", width: "100%" }}>
+      <input
+        value={texto}
+        onChange={e => { setTexto(e.target.value); onChange(e.target.value || "Todos"); setAberto(true); }}
+        onFocus={() => setAberto(true)}
+        placeholder={placeholder}
+        style={{ ...smStyle, color: texto ? "#024aab" : "#94a3b8", paddingRight: 18 }}
+      />
+      <span style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", fontSize: 8, color: "#94a3b8", pointerEvents: "none" }}>▼</span>
+      {aberto && filtradas.length > 0 && (
+        <div style={{ position: "fixed", zIndex: 9999, background: "white", border: "1px solid #e2e8f0", borderRadius: 6, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", minWidth: 160, maxHeight: 180, overflowY: "auto" }}
+          ref={el => { if (el && ref.current) { const r = ref.current.getBoundingClientRect(); el.style.top = (r.bottom + 2) + "px"; el.style.left = r.left + "px"; el.style.width = Math.max(r.width, 160) + "px"; } }}>
+          <div onClick={() => { onChange("Todos"); setTexto(""); setAberto(false); }}
+            style={{ padding: "6px 10px", fontSize: 11, color: "#94a3b8", cursor: "pointer", borderBottom: "1px solid #f1f5f9" }}
+            onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+            onMouseLeave={e => e.currentTarget.style.background = "white"}>(Todos)</div>
+          {filtradas.map(o => (
+            <div key={o} onClick={() => { onChange(o); setTexto(o); setAberto(false); }}
+              style={{ padding: "6px 10px", fontSize: 11, color: "#1e293b", cursor: "pointer" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#f0f6ff"}
+              onMouseLeave={e => e.currentTarget.style.background = "white"}>{o}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── DATE FILTRO (digitável ddmmaaaa + calendário) ─────────────────────────
+function DateFiltro({ value, onChange, smStyle }) {
+  const inputRef = useRef(null);
+  function handleChange(e) {
+    let v = e.target.value.replace(/\D/g, "").slice(0, 8);
+    if (v.length > 4) v = v.slice(0, 2) + "/" + v.slice(2, 4) + "/" + v.slice(4);
+    else if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
+    onChange(v);
+  }
+  function handleCalendario(e) {
+    const iso = e.target.value;
+    if (!iso) return;
+    const [y, m, d] = iso.split("-");
+    onChange(`${d}/${m}/${y}`);
+  }
+  return (
+    <div style={{ position: "relative", width: "100%" }}>
+      <input value={value} onChange={handleChange} placeholder="ddmmaaaa" maxLength={10}
+        style={{ ...smStyle, color: value ? "#024aab" : "#94a3b8", paddingRight: 20 }} />
+      <span style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", fontSize: 12, cursor: "pointer", color: "#94a3b8", lineHeight: 1 }}
+        onClick={() => inputRef.current && inputRef.current.showPicker()}>📅</span>
+      <input ref={inputRef} type="date" onChange={handleCalendario}
+        style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0, top: 0, left: 0 }} />
+    </div>
+  );
+}
+
 // ─── MODAL RELATÓRIO / DASHBOARD ──────────────────────────────────────────
 function ModalRelatorio({ tarefas, profiles, onFechar }) {
   const total = tarefas.length;
@@ -1153,95 +1221,19 @@ export default function App() {
   // Renderizar filtro por chave
   function renderFiltro(key) {
     const smStyle = { background: "white", border: "1px solid #e2e8f0", borderRadius: 5, color: "#475569", padding: "4px 6px", fontSize: 11, width: "100%", outline: "none", fontFamily: "'Inter', sans-serif" };
-
-    function ComboFiltro({ value, onChange, opcoes, placeholder = "Filtrar..." }) {
-      const [aberto, setAberto] = useState(false);
-      const [texto, setTexto] = useState(value === "Todos" ? "" : value);
-      const ref = useRef(null);
-      useEffect(() => { setTexto(value === "Todos" ? "" : value); }, [value]);
-      useEffect(() => {
-        function fechar(e) { if (ref.current && !ref.current.contains(e.target)) setAberto(false); }
-        document.addEventListener("mousedown", fechar);
-        return () => document.removeEventListener("mousedown", fechar);
-      }, []);
-      const filtradas = opcoes.filter(o => o.toLowerCase().includes(texto.toLowerCase()));
-      return (
-        <div ref={ref} style={{ position: "relative", width: "100%" }}>
-          <input
-            value={texto}
-            onChange={e => { setTexto(e.target.value); onChange(e.target.value || "Todos"); setAberto(true); }}
-            onFocus={() => setAberto(true)}
-            placeholder={placeholder}
-            style={{ ...smStyle, color: texto ? "#024aab" : "#94a3b8", paddingRight: 18 }}
-          />
-          <span style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", fontSize: 8, color: "#94a3b8", cursor: "pointer", pointerEvents: "none" }}>▼</span>
-          {aberto && filtradas.length > 0 && (
-            <div style={{ position: "fixed", zIndex: 9999, background: "white", border: "1px solid #e2e8f0", borderRadius: 6, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", minWidth: 160, maxHeight: 180, overflowY: "auto" }}
-              ref={el => { if (el && ref.current) { const r = ref.current.getBoundingClientRect(); el.style.top = (r.bottom + 2) + "px"; el.style.left = r.left + "px"; el.style.width = Math.max(r.width, 160) + "px"; } }}>
-              <div onClick={() => { onChange("Todos"); setTexto(""); setAberto(false); }}
-                style={{ padding: "6px 10px", fontSize: 11, color: "#94a3b8", cursor: "pointer", borderBottom: "1px solid #f1f5f9" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
-                onMouseLeave={e => e.currentTarget.style.background = "white"}>
-                (Todos)
-              </div>
-              {filtradas.map(o => (
-                <div key={o} onClick={() => { onChange(o); setTexto(o); setAberto(false); }}
-                  style={{ padding: "6px 10px", fontSize: 11, color: "#1e293b", cursor: "pointer" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#f0f6ff"}
-                  onMouseLeave={e => e.currentTarget.style.background = "white"}>
-                  {o}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    function DateFiltro({ value, onChange }) {
-      const inputRef = useRef(null);
-      function handleChange(e) {
-        let v = e.target.value.replace(/\D/g, "").slice(0, 8);
-        if (v.length > 4) v = v.slice(0, 2) + "/" + v.slice(2, 4) + "/" + v.slice(4);
-        else if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
-        onChange(v);
-      }
-      function handleCalendario(e) {
-        const iso = e.target.value; // YYYY-MM-DD
-        if (!iso) return;
-        const [y, m, d] = iso.split("-");
-        onChange(`${d}/${m}/${y}`);
-      }
-      return (
-        <div style={{ position: "relative", width: "100%" }}>
-          <input
-            value={value}
-            onChange={handleChange}
-            placeholder="ddmmaaaa"
-            maxLength={10}
-            style={{ ...smStyle, color: value ? "#024aab" : "#94a3b8", paddingRight: 20 }}
-          />
-          <span style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", fontSize: 12, cursor: "pointer", color: "#94a3b8", lineHeight: 1 }}
-            onClick={() => inputRef.current && inputRef.current.showPicker()}>📅</span>
-          <input ref={inputRef} type="date" onChange={handleCalendario}
-            style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0, top: 0, left: 0 }} />
-        </div>
-      );
-    }
-
     switch (key) {
-      case "cliente":      return <ComboFiltro value={fCliente} onChange={setFCliente} opcoes={uniq(tarefasEnriquecidas.map(t => t.cliente)).slice(1)} placeholder="Filtrar cliente..." />;
-      case "codigo":       return <ComboFiltro value={fCodigo} onChange={setFCodigo} opcoes={uniq(tarefasEnriquecidas.map(t => t.codigo_cliente)).filter(Boolean).slice(1)} placeholder="Filtrar código..." />;
-      case "cnpj":         return <ComboFiltro value={fCnpj} onChange={setFCnpj} opcoes={uniq(tarefasEnriquecidas.map(t => t.cnpj_cliente)).filter(Boolean).slice(1)} placeholder="Filtrar CNPJ..." />;
-      case "competencia":  return <ComboFiltro value={fComp} onChange={setFComp} opcoes={uniq(tarefasEnriquecidas.map(t => t.competencia)).filter(Boolean).slice(1)} placeholder="Filtrar comp..." />;
-      case "tipo":         return <ComboFiltro value={fTipo} onChange={setFTipo} opcoes={TIPOS} placeholder="Filtrar tipo..." />;
-      case "prazo_interno":return <DateFiltro value={fPrazoInt} onChange={setFPrazoInt} />;
-      case "prazo_legal":  return <DateFiltro value={fPrazoLeg} onChange={setFPrazoLeg} />;
-      case "responsavel":  return <ComboFiltro value={fResp} onChange={setFResp} opcoes={uniq(tarefasEnriquecidas.map(t => t.responsavel_nome)).filter(Boolean).slice(1)} placeholder="Filtrar resp..." />;
-      case "revisor":      return <ComboFiltro value={fRevisor} onChange={setFRevisor} opcoes={uniq(tarefasEnriquecidas.map(t => t.revisor_nome)).filter(Boolean).slice(1)} placeholder="Filtrar revisor..." />;
-      case "participantes":return <ComboFiltro value={fPart === "" ? "Todos" : fPart} onChange={v => setFPart(v === "Todos" ? "" : v)} opcoes={[...new Set(tarefasEnriquecidas.flatMap(t => (t.participantes || "").split(",").map(p => p.trim()).filter(Boolean)))]} placeholder="Filtrar part..." />;
-      case "status":       return <ComboFiltro value={fStatus} onChange={setFStatus} opcoes={STATUS_LIST} placeholder="Filtrar status..." />;
-      case "situacao":     return <ComboFiltro value={fSituacao} onChange={setFSituacao} opcoes={SITUACAO_LIST} placeholder="Filtrar situação..." />;
+      case "cliente":      return <ComboFiltro value={fCliente} onChange={setFCliente} opcoes={uniq(tarefasEnriquecidas.map(t => t.cliente)).slice(1)} placeholder="Filtrar cliente..." smStyle={smStyle} />;
+      case "codigo":       return <ComboFiltro value={fCodigo} onChange={setFCodigo} opcoes={uniq(tarefasEnriquecidas.map(t => t.codigo_cliente)).filter(Boolean).slice(1)} placeholder="Filtrar código..." smStyle={smStyle} />;
+      case "cnpj":         return <ComboFiltro value={fCnpj} onChange={setFCnpj} opcoes={uniq(tarefasEnriquecidas.map(t => t.cnpj_cliente)).filter(Boolean).slice(1)} placeholder="Filtrar CNPJ..." smStyle={smStyle} />;
+      case "competencia":  return <ComboFiltro value={fComp} onChange={setFComp} opcoes={uniq(tarefasEnriquecidas.map(t => t.competencia)).filter(Boolean).slice(1)} placeholder="Filtrar comp..." smStyle={smStyle} />;
+      case "tipo":         return <ComboFiltro value={fTipo} onChange={setFTipo} opcoes={TIPOS} placeholder="Filtrar tipo..." smStyle={smStyle} />;
+      case "prazo_interno":return <DateFiltro value={fPrazoInt} onChange={setFPrazoInt} smStyle={smStyle} />;
+      case "prazo_legal":  return <DateFiltro value={fPrazoLeg} onChange={setFPrazoLeg} smStyle={smStyle} />;
+      case "responsavel":  return <ComboFiltro value={fResp} onChange={setFResp} opcoes={uniq(tarefasEnriquecidas.map(t => t.responsavel_nome)).filter(Boolean).slice(1)} placeholder="Filtrar resp..." smStyle={smStyle} />;
+      case "revisor":      return <ComboFiltro value={fRevisor} onChange={setFRevisor} opcoes={uniq(tarefasEnriquecidas.map(t => t.revisor_nome)).filter(Boolean).slice(1)} placeholder="Filtrar revisor..." smStyle={smStyle} />;
+      case "participantes":return <ComboFiltro value={fPart === "" ? "Todos" : fPart} onChange={v => setFPart(v === "Todos" ? "" : v)} opcoes={[...new Set(tarefasEnriquecidas.flatMap(t => (t.participantes || "").split(",").map(p => p.trim()).filter(Boolean)))]} placeholder="Filtrar part..." smStyle={smStyle} />;
+      case "status":       return <ComboFiltro value={fStatus} onChange={setFStatus} opcoes={STATUS_LIST} placeholder="Filtrar status..." smStyle={smStyle} />;
+      case "situacao":     return <ComboFiltro value={fSituacao} onChange={setFSituacao} opcoes={SITUACAO_LIST} placeholder="Filtrar situação..." smStyle={smStyle} />;
       default: return null;
     }
   }
