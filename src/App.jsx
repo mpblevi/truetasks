@@ -543,7 +543,7 @@ function maskCNPJ(v) {
 }
 
 function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
-  const formVazio = { nome: "", cnpj: "", codigo: "", responsavel_id: "", cliente_desde: "" };
+  const formVazio = { nome: "", cnpj: "", codigo: "", responsavel_id: "", revisor_id: "", cliente_desde: "" };
   const [modalNovo, setModalNovo] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [form, setForm] = useState(formVazio);
@@ -552,14 +552,14 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
 
   function abrirEditar(c) {
     setEditandoId(c.id);
-    setForm({ nome: c.nome, cnpj: c.cnpj || "", codigo: c.codigo || "", responsavel_id: c.responsavel_id || "", cliente_desde: c.cliente_desde || "" });
+    setForm({ nome: c.nome, cnpj: c.cnpj || "", codigo: c.codigo || "", responsavel_id: c.responsavel_id || "", revisor_id: c.revisor_id || "", cliente_desde: c.cliente_desde || "" });
     setModalNovo(true); setErro("");
   }
 
   async function salvarCliente() {
     if (!form.nome.trim()) { setErro("Informe o nome."); return; }
     setLoading(true);
-    const payload = { nome: form.nome.trim(), cnpj: form.cnpj.trim(), codigo: form.codigo.trim(), responsavel_id: form.responsavel_id || null, cliente_desde: form.cliente_desde || null };
+    const payload = { nome: form.nome.trim(), cnpj: form.cnpj.trim(), codigo: form.codigo.trim(), responsavel_id: form.responsavel_id || null, revisor_id: form.revisor_id || null, cliente_desde: form.cliente_desde || null };
     if (editandoId) {
       await supabase.from("clientes").update(payload).eq("id", editandoId);
       setMsg(`Cliente "${form.nome}" atualizado!`);
@@ -588,7 +588,7 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
         <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar por nome ou CNPJ..." style={{ ...INPUT, marginBottom: 16 }} />
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20, maxHeight: 300, overflowY: "auto" }}>
           {filtrados.length === 0 && <div style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Nenhum cliente cadastrado.</div>}
-          {filtrados.map(c => { const resp = profiles.find(p => p.id === c.responsavel_id); return (
+          {filtrados.map(c => { const resp = profiles.find(p => p.id === c.responsavel_id); const rev = profiles.find(p => p.id === c.revisor_id); return (
             <div key={c.id} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
                 <div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{c.nome}</div>
@@ -596,6 +596,7 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
                   {c.codigo && <span style={{ background: "#dce8f7", color: "#024aab", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>#{c.codigo}</span>}
                   {c.cnpj && <span style={{ fontFamily: "monospace" }}>{c.cnpj}</span>}
                   {resp && <span>Resp: {resp.nome}</span>}
+                  {rev && <span>Revisor: {rev.nome}</span>}
                   {c.cliente_desde && <span>Cliente desde: {c.cliente_desde.split("-").reverse().join("/")}</span>}
                 </div>
               </div>
@@ -615,7 +616,10 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
               <div><label style={LABEL}>Nome *</label><input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Nome do cliente" style={INPUT} /></div>
               <div><label style={LABEL}>CNPJ</label><input value={form.cnpj} onChange={e => setForm(f => ({ ...f, cnpj: maskCNPJ(e.target.value) }))} placeholder="00.000.000/0001-00" maxLength={18} style={INPUT} /></div>
               <div><label style={LABEL}>Código Interno</label><input value={form.codigo} onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))} placeholder="Ex: 2764" style={INPUT} /></div>
-              <div><label style={LABEL}>Responsável padrão</label><select value={form.responsavel_id} onChange={e => setForm(f => ({ ...f, responsavel_id: e.target.value }))} style={INPUT}><option value="">Selecione...</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div><label style={LABEL}>Responsável padrão</label><select value={form.responsavel_id} onChange={e => setForm(f => ({ ...f, responsavel_id: e.target.value }))} style={INPUT}><option value="">Selecione...</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
+                <div><label style={LABEL}>Revisor padrão</label><select value={form.revisor_id} onChange={e => setForm(f => ({ ...f, revisor_id: e.target.value }))} style={INPUT}><option value="">Selecione...</option>{profiles.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></div>
+              </div>
               <div><label style={LABEL}>Cliente desde</label><input type="date" value={form.cliente_desde} onChange={e => setForm(f => ({ ...f, cliente_desde: e.target.value }))} style={INPUT} /></div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => { setModalNovo(false); setEditandoId(null); }} style={{ flex: 1, background: "white", border: "1px solid #e2e8f0", borderRadius: 9, color: "#64748b", padding: "10px", fontSize: 14, cursor: "pointer" }}>Cancelar</button>
@@ -881,7 +885,7 @@ export default function App() {
   const [tarefas, setTarefas] = useState([]); const [profiles, setProfiles] = useState([]); const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selecionados, setSelecionados] = useState([]);
-  const [esconderFinalizados, setEsconderFinalizados] = useState(false);
+  const [esconderFinalizados, setEsconderFinalizados] = useState(true);
 
   // Filtros por coluna
   const [fCliente, setFCliente] = useState("Todos"); const [fCodigo, setFCodigo] = useState("Todos"); const [fCnpj, setFCnpj] = useState("Todos");
@@ -1228,10 +1232,12 @@ export default function App() {
           ))}
           <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             {(() => { const n = [fCliente,fCodigo,fCnpj,fComp,fTipo,fResp,fRevisor,fStatus,fSituacao].filter(f=>f!=="Todos").length + (fPrazoInt?1:0) + (fPrazoLeg?1:0) + (fPart?1:0); return n > 0 ? <button onClick={() => { setFCliente("Todos"); setFCodigo("Todos"); setFCnpj("Todos"); setFComp("Todos"); setFTipo("Todos"); setFPrazoInt(""); setFPrazoLeg(""); setFResp("Todos"); setFRevisor("Todos"); setFPart(""); setFStatus("Todos"); setFSituacao("Todos"); }} style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 8, color: "#dc2626", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>✕ {n} filtro(s) ativo(s)</button> : null; })()}
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", cursor: "pointer" }}>
-              <input type="checkbox" checked={esconderFinalizados} onChange={e => setEsconderFinalizados(e.target.checked)} style={{ width: 15, height: 15 }} />
-              Esconder finalizados
-            </label>
+            <button onClick={() => setEsconderFinalizados(v => !v)} style={{ background: esconderFinalizados ? "#272e40" : "white", border: `1.5px solid ${esconderFinalizados ? "#272e40" : "#cbd5e1"}`, borderRadius: 20, padding: "5px 14px", fontSize: 13, color: esconderFinalizados ? "white" : "#64748b", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ width: 28, height: 16, background: esconderFinalizados ? "#4ade80" : "#cbd5e1", borderRadius: 10, display: "inline-flex", alignItems: "center", padding: "0 2px", transition: "background .2s", flexShrink: 0 }}>
+                  <span style={{ width: 12, height: 12, background: "white", borderRadius: "50%", display: "block", transform: esconderFinalizados ? "translateX(12px)" : "translateX(0)", transition: "transform .2s" }} />
+                </span>
+                Esconder finalizados
+              </button>
             {isAdmin && <button onClick={() => setRelatorio(true)} style={{ background: "#edf3fb", border: "1px solid #b3cfee", borderRadius: 8, color: "#024aab", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Relatório</button>}
             {isAdmin && <GerenciarAcoes selecionados={selecionados} tarefas={tarefasEnriquecidas} profiles={profiles} onAtualizar={carregarTarefas} onLimpar={() => setSelecionados([])} />}
             <button onClick={exportarExcel} style={{ background: "#f0fdf4", border: "1px solid #22c55e", borderRadius: 8, color: "#15803d", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Exportar Excel</button>
