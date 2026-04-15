@@ -1213,6 +1213,11 @@ export default function App() {
     const map = { cliente: "cliente", codigo: "codigo_cliente", cnpj: "cnpj_cliente", competencia: "competencia", tipo: "tipo", prazo_interno: "prazo_interno", prazo_legal: "prazo_legal", responsavel: "responsavel_nome", revisor: "revisor_nome", participantes: "participantes", status: "status", situacao: "situacaoCalc" };
     const field = map[sortKey] || sortKey;
     return [...base].sort((a, b) => {
+      const dateFields = ["prazo_interno", "prazo_legal"];
+      if (dateFields.includes(field)) {
+        const va = a[field] || ""; const vb = b[field] || "";
+        return sortDir === "asc" ? va.localeCompare(vb) : vb.localeCompare(va);
+      }
       const va = (a[field] || "").toString().toLowerCase();
       const vb = (b[field] || "").toString().toLowerCase();
       const na = parseFloat(va); const nb = parseFloat(vb);
