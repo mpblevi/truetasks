@@ -882,8 +882,16 @@ function PainelObrigacoes({ clientes, profiles, onAtualizar, onFechar }) {
 // ─── PAINEL USUÁRIOS ───────────────────────────────────────────────────────
 function PainelUsuarios({ profiles, onAtualizar, onFechar }) {
   const [modalNovo, setModalNovo] = useState(false);
+  const [editandoId, setEditandoId] = useState(null);
   const [form, setForm] = useState({ nome: "", usuario: "", senha: "", cargo: "colaborador" });
   const [loading, setLoading] = useState(false); const [erro, setErro] = useState(""); const [msg, setMsg] = useState("");
+
+  function abrirEditar(p) {
+    setEditandoId(p.id);
+    setForm({ nome: p.nome, usuario: p.usuario || "", senha: "", cargo: p.cargo });
+    setModalNovo(true); setErro("");
+  }
+
   async function criarUsuario() {
     if (!form.nome.trim() || !form.usuario.trim() || !form.senha.trim()) { setErro("Preencha todos os campos."); return; }
     if (form.senha.length < 6) { setErro("Senha precisa ter pelo menos 6 caracteres."); return; }
@@ -893,7 +901,22 @@ function PainelUsuarios({ profiles, onAtualizar, onFechar }) {
     if (data.user) { await supabase.from("profiles").insert({ id: data.user.id, nome: form.nome, cargo: form.cargo, usuario: form.usuario }); setMsg(`Usuário "${form.usuario}" criado!`); setForm({ nome: "", usuario: "", senha: "", cargo: "colaborador" }); setModalNovo(false); onAtualizar(); }
     setLoading(false);
   }
+
+  async function editarUsuario() {
+    if (!form.nome.trim()) { setErro("Informe o nome."); return; }
+    setLoading(true); setErro("");
+    await supabase.from("profiles").update({ nome: form.nome, cargo: form.cargo }).eq("id", editandoId);
+    if (form.senha.trim()) {
+      if (form.senha.length < 6) { setErro("Senha precisa ter pelo menos 6 caracteres."); setLoading(false); return; }
+      await supabase.auth.admin.updateUserById(editandoId, { password: form.senha }).catch(() => {});
+    }
+    setMsg(`Usuário "${form.nome}" atualizado!`);
+    setForm({ nome: "", usuario: "", senha: "", cargo: "colaborador" });
+    setEditandoId(null); setModalNovo(false); onAtualizar(); setLoading(false);
+  }
+
   async function excluirUsuario(id, nome) { if (!window.confirm(`Remover "${nome}"?`)) return; await supabase.from("profiles").delete().eq("id", id); onAtualizar(); }
+
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
       <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
@@ -906,23 +929,26 @@ function PainelUsuarios({ profiles, onAtualizar, onFechar }) {
           {profiles.map(p => (
             <div key={p.id} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div><div style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>{p.nome}</div><div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>usuário: <span style={{ color: "#024aab" }}>{p.usuario || "—"}</span><span style={{ marginLeft: 12, color: p.cargo === "admin" ? "#d97706" : "#64748b", textTransform: "uppercase", letterSpacing: 1 }}>{p.cargo === "admin" ? "Admin" : "Colaborador"}</span></div></div>
-              {p.cargo !== "admin" && <button onClick={() => excluirUsuario(p.id, p.nome)} style={{ background: "#fee2e2", border: "none", borderRadius: 8, color: "#dc2626", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Remover</button>}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => abrirEditar(p)} style={{ background: "#dce8f7", border: "none", borderRadius: 8, color: "#024aab", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Editar</button>
+                {p.cargo !== "admin" && <button onClick={() => excluirUsuario(p.id, p.nome)} style={{ background: "#fee2e2", border: "none", borderRadius: 8, color: "#dc2626", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>Remover</button>}
+              </div>
             </div>
           ))}
         </div>
-        <button onClick={() => { setModalNovo(true); setErro(""); setMsg(""); }} style={{ ...BTN_PRIMARY }}>+ Adicionar Novo Usuário</button>
+        <button onClick={() => { setModalNovo(true); setEditandoId(null); setForm({ nome: "", usuario: "", senha: "", cargo: "colaborador" }); setErro(""); setMsg(""); }} style={{ ...BTN_PRIMARY }}>+ Adicionar Novo Usuário</button>
         {modalNovo && (
           <div style={{ marginTop: 24, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20 }}>
-            <div style={{ fontWeight: 700, color: "#024aab", marginBottom: 16 }}>Novo Usuário</div>
+            <div style={{ fontWeight: 700, color: "#024aab", marginBottom: 16 }}>{editandoId ? "Editar Usuário" : "Novo Usuário"}</div>
             {erro && <div style={{ background: "#fee2e2", borderRadius: 8, padding: "8px 12px", color: "#dc2626", fontSize: 13, marginBottom: 12 }}>{erro}</div>}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div><label style={LABEL}>Nome completo</label><input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Ex: Ana Lima" style={INPUT} /></div>
-              <div><label style={LABEL}>Usuário</label><input value={form.usuario} onChange={e => setForm(f => ({ ...f, usuario: e.target.value.replace(/\s/g, "") }))} placeholder="Ex: 001 ou ana" style={INPUT} /></div>
-              <div><label style={LABEL}>Senha inicial</label><input type="password" value={form.senha} onChange={e => setForm(f => ({ ...f, senha: e.target.value }))} placeholder="Mínimo 6 caracteres" style={INPUT} /></div>
+              {!editandoId && <div><label style={LABEL}>Usuário</label><input value={form.usuario} onChange={e => setForm(f => ({ ...f, usuario: e.target.value.replace(/\s/g, "") }))} placeholder="Ex: 001 ou ana" style={INPUT} /></div>}
+              <div><label style={LABEL}>{editandoId ? "Nova senha (deixe em branco para não alterar)" : "Senha inicial"}</label><input type="password" value={form.senha} onChange={e => setForm(f => ({ ...f, senha: e.target.value }))} placeholder="Mínimo 6 caracteres" style={INPUT} /></div>
               <div><label style={LABEL}>Cargo</label><select value={form.cargo} onChange={e => setForm(f => ({ ...f, cargo: e.target.value }))} style={INPUT}><option value="colaborador">Colaborador</option><option value="admin">Administrador</option></select></div>
               <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={() => setModalNovo(false)} style={{ flex: 1, background: "white", border: "1px solid #e2e8f0", borderRadius: 9, color: "#64748b", padding: "10px", fontSize: 14, cursor: "pointer" }}>Cancelar</button>
-                <button onClick={criarUsuario} disabled={loading} style={{ ...BTN_PRIMARY, flex: 2, width: "auto", opacity: loading ? 0.7 : 1 }}>{loading ? "Criando..." : "Criar Usuário"}</button>
+                <button onClick={() => { setModalNovo(false); setEditandoId(null); }} style={{ flex: 1, background: "white", border: "1px solid #e2e8f0", borderRadius: 9, color: "#64748b", padding: "10px", fontSize: 14, cursor: "pointer" }}>Cancelar</button>
+                <button onClick={editandoId ? editarUsuario : criarUsuario} disabled={loading} style={{ ...BTN_PRIMARY, flex: 2, width: "auto", opacity: loading ? 0.7 : 1 }}>{loading ? "Salvando..." : editandoId ? "Salvar Alterações" : "Criar Usuário"}</button>
               </div>
             </div>
           </div>
