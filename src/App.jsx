@@ -1232,12 +1232,12 @@ export default function App() {
           ))}
           <div style={{ marginLeft: "auto", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             {(() => { const n = [fCliente,fCodigo,fCnpj,fComp,fTipo,fResp,fRevisor,fStatus,fSituacao].filter(f=>f!=="Todos").length + (fPrazoInt?1:0) + (fPrazoLeg?1:0) + (fPart?1:0); return n > 0 ? <button onClick={() => { setFCliente("Todos"); setFCodigo("Todos"); setFCnpj("Todos"); setFComp("Todos"); setFTipo("Todos"); setFPrazoInt(""); setFPrazoLeg(""); setFResp("Todos"); setFRevisor("Todos"); setFPart(""); setFStatus("Todos"); setFSituacao("Todos"); }} style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 8, color: "#dc2626", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>✕ {n} filtro(s) ativo(s)</button> : null; })()}
-            <button onClick={() => setEsconderFinalizados(v => !v)} style={{ background: esconderFinalizados ? "#272e40" : "white", border: `1.5px solid ${esconderFinalizados ? "#272e40" : "#cbd5e1"}`, borderRadius: 20, padding: "5px 14px", fontSize: 13, color: esconderFinalizados ? "white" : "#64748b", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 28, height: 16, background: esconderFinalizados ? "#4ade80" : "#cbd5e1", borderRadius: 10, display: "inline-flex", alignItems: "center", padding: "0 2px", transition: "background .2s", flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569", fontWeight: 600 }}>
+                <span style={{ width: 28, height: 16, background: esconderFinalizados ? "#272e40" : "#cbd5e1", borderRadius: 10, display: "inline-flex", alignItems: "center", padding: "0 2px", transition: "background .2s", flexShrink: 0, cursor: "pointer" }} onClick={() => setEsconderFinalizados(v => !v)}>
                   <span style={{ width: 12, height: 12, background: "white", borderRadius: "50%", display: "block", transform: esconderFinalizados ? "translateX(12px)" : "translateX(0)", transition: "transform .2s" }} />
                 </span>
                 Esconder finalizados
-              </button>
+              </div>
             {isAdmin && <button onClick={() => setRelatorio(true)} style={{ background: "#edf3fb", border: "1px solid #b3cfee", borderRadius: 8, color: "#024aab", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Relatório</button>}
             {isAdmin && <GerenciarAcoes selecionados={selecionados} tarefas={tarefasEnriquecidas} profiles={profiles} onAtualizar={carregarTarefas} onLimpar={() => setSelecionados([])} />}
             <button onClick={exportarExcel} style={{ background: "#f0fdf4", border: "1px solid #22c55e", borderRadius: 8, color: "#15803d", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Exportar Excel</button>
