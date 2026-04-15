@@ -1012,8 +1012,10 @@ export default function App() {
     const proximoMes = addMonths(maxCompetencia + "-01", 1);
     const proximoMesStr = proximoMes.substring(0, 7); // YYYY-MM
 
-    // Verifica se já foram geradas
-    const jaExiste = tarefas.some(t => t.recorrente && t.prazo_interno && t.prazo_interno.startsWith(proximoMesStr));
+    // Verifica se já foram geradas (pela competência, não pelo prazo)
+    const [proxAno, proxMesNum] = proximoMesStr.split("-");
+    const proxCompStr = `${proxMesNum}/${proxAno}`;
+    const jaExiste = tarefas.some(t => t.recorrente && t.competencia === proxCompStr);
     if (jaExiste) { setMsgRecorrente("Tarefas do próximo mês já foram geradas!"); setGerandoRecorrentes(false); return; }
 
     const novas = [];
