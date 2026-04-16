@@ -413,6 +413,55 @@ function DateFiltro({ value, onChange, smStyle }) {
   );
 }
 
+// ─── MENU USUÁRIO (header) ─────────────────────────────────────────────────
+function MenuUsuario({ profile, isAdmin, gerandoRecorrentes, onClientes, onObrigacoes, onUsuarios, onGerarMes, onSenha, onLogout }) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    function fechar(e) { if (ref.current && !ref.current.contains(e.target)) setAberto(false); }
+    document.addEventListener("mousedown", fechar);
+    return () => document.removeEventListener("mousedown", fechar);
+  }, []);
+
+  const itens = [
+    ...(isAdmin ? [
+      { label: "👥 Clientes", action: onClientes },
+      { label: "📋 Obrigações", action: onObrigacoes },
+      { label: "👤 Usuários", action: onUsuarios },
+      { label: "📅 Gerar Próximo Mês", action: onGerarMes, disabled: gerandoRecorrentes },
+      { divider: true },
+    ] : []),
+    { label: "🔑 Trocar Senha", action: onSenha },
+    { label: "Sair", action: onLogout, danger: true },
+  ];
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button onClick={() => setAberto(v => !v)} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ textAlign: "left" }}>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>{profile.nome}</div>
+          <div style={{ fontSize: 10, color: isAdmin ? "#fde68a" : "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: 1 }}>{isAdmin ? "Admin" : "Colaborador"}</div>
+        </div>
+        <span style={{ fontSize: 10, opacity: 0.7 }}>{aberto ? "▲" : "▼"}</span>
+      </button>
+      {aberto && (
+        <div style={{ position: "fixed", zIndex: 9999, background: "white", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", minWidth: 200, overflow: "hidden" }}
+          ref={el => { if (el && ref.current) { const r = ref.current.getBoundingClientRect(); el.style.top = (r.bottom + 4) + "px"; el.style.right = (window.innerWidth - r.right) + "px"; } }}>
+          {itens.map((item, i) => item.divider
+            ? <div key={i} style={{ height: 1, background: "#f1f5f9", margin: "4px 0" }} />
+            : <button key={i} disabled={item.disabled} onClick={() => { item.action(); setAberto(false); }}
+                style={{ display: "block", width: "100%", padding: "10px 16px", fontSize: 13, color: item.danger ? "#dc2626" : "#1e293b", background: "white", border: "none", textAlign: "left", cursor: item.disabled ? "not-allowed" : "pointer", fontFamily: "'Inter', sans-serif", fontWeight: item.danger ? 600 : 400, opacity: item.disabled ? 0.5 : 1 }}
+                onMouseEnter={e => { if (!item.disabled) e.currentTarget.style.background = item.danger ? "#fee2e2" : "#f8fafc"; }}
+                onMouseLeave={e => e.currentTarget.style.background = "white"}>
+                {item.label}
+              </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── MODAL TROCAR SENHA ────────────────────────────────────────────────────
 function ModalTrocarSenha({ onFechar }) {
   const [senhaAtual, setSenhaAtual] = useState("");
@@ -1390,17 +1439,19 @@ export default function App() {
       {/* HEADER */}
       <div style={{ background: "#272e40", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <Logo size={20} dark={false} />
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <div style={{ textAlign: "right" }}><div style={{ fontSize: 14, fontWeight: 600, color: "white" }}>{profile.nome}</div><div style={{ fontSize: 11, color: isAdmin ? "#fde68a" : "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: 1 }}>{isAdmin ? "Admin" : "Colaborador"}</div></div>
-          <button onClick={() => setModalSenha(true)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "rgba(255,255,255,0.8)", padding: "8px 14px", fontSize: 13, cursor: "pointer" }}>🔑 Senha</button>
-          {isAdmin && (<>
-            <button onClick={() => setPainelClientes(true)} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Clientes</button>
-              <button onClick={() => setPainelObrigacoes(true)} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Obrigações</button>
-            <button onClick={() => setPainelUsuarios(true)} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Usuários</button>
-            <button onClick={gerarProximoMes} disabled={gerandoRecorrentes} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, opacity: gerandoRecorrentes ? 0.7 : 1 }}>Gerar Próximo Mês</button>
-            <button onClick={abrirNova} style={{ background: "white", border: "none", borderRadius: 8, color: "#272e40", padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Nova Tarefa</button>
-          </>)}
-          <button onClick={handleLogout} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "rgba(255,255,255,0.8)", padding: "8px 14px", fontSize: 13, cursor: "pointer" }}>Sair</button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {isAdmin && <button onClick={abrirNova} style={{ background: "white", border: "none", borderRadius: 8, color: "#272e40", padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Nova Tarefa</button>}
+          <MenuUsuario
+            profile={profile}
+            isAdmin={isAdmin}
+            gerandoRecorrentes={gerandoRecorrentes}
+            onClientes={() => setPainelClientes(true)}
+            onObrigacoes={() => setPainelObrigacoes(true)}
+            onUsuarios={() => setPainelUsuarios(true)}
+            onGerarMes={gerarProximoMes}
+            onSenha={() => setModalSenha(true)}
+            onLogout={handleLogout}
+          />
         </div>
       </div>
 
