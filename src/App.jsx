@@ -414,7 +414,7 @@ function DateFiltro({ value, onChange, smStyle }) {
 }
 
 // ─── MENU USUÁRIO (header) ─────────────────────────────────────────────────
-function MenuUsuario({ profile, isAdmin, onSenha, onLogout }) {
+function MenuUsuario({ profile, isAdmin, tela, onTela, onSenha, onLogout }) {
   const [aberto, setAberto] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -422,6 +422,17 @@ function MenuUsuario({ profile, isAdmin, onSenha, onLogout }) {
     document.addEventListener("mousedown", fechar);
     return () => document.removeEventListener("mousedown", fechar);
   }, []);
+
+  function Item({ label, onClick, danger, active }) {
+    return (
+      <button onClick={() => { onClick(); setAberto(false); }}
+        style={{ display: "block", width: "100%", padding: "10px 16px", fontSize: 13, color: danger ? "#dc2626" : active ? "#024aab" : "#1e293b", background: active ? "#edf3fb" : "white", border: "none", textAlign: "left", cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: (danger || active) ? 600 : 400 }}
+        onMouseEnter={e => e.currentTarget.style.background = danger ? "#fee2e2" : active ? "#dce8f7" : "#f8fafc"}
+        onMouseLeave={e => e.currentTarget.style.background = active ? "#edf3fb" : "white"}>
+        {label}
+      </button>
+    );
+  }
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
@@ -433,17 +444,18 @@ function MenuUsuario({ profile, isAdmin, onSenha, onLogout }) {
         <span style={{ fontSize: 10, opacity: 0.7 }}>{aberto ? "▲" : "▼"}</span>
       </button>
       {aberto && (
-        <div style={{ position: "fixed", zIndex: 9999, background: "white", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", minWidth: 180, overflow: "hidden" }}
+        <div style={{ position: "fixed", zIndex: 9999, background: "white", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", minWidth: 200, overflow: "hidden" }}
           ref={el => { if (el && ref.current) { const r = ref.current.getBoundingClientRect(); el.style.top = (r.bottom + 4) + "px"; el.style.right = (window.innerWidth - r.right) + "px"; } }}>
-          <button onClick={() => { onSenha(); setAberto(false); }}
-            style={{ display: "block", width: "100%", padding: "10px 16px", fontSize: 13, color: "#1e293b", background: "white", border: "none", textAlign: "left", cursor: "pointer", fontFamily: "'Inter', sans-serif" }}
-            onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
-            onMouseLeave={e => e.currentTarget.style.background = "white"}>🔑 Trocar Senha</button>
+          {isAdmin && <>
+            <Item label="📋 Tarefas" onClick={() => onTela("tarefas")} active={tela === "tarefas"} />
+            <Item label="👥 Clientes" onClick={() => onTela("clientes")} active={tela === "clientes"} />
+            <Item label="📁 Obrigações" onClick={() => onTela("obrigacoes")} active={tela === "obrigacoes"} />
+            <Item label="👤 Usuários" onClick={() => onTela("usuarios")} active={tela === "usuarios"} />
+            <div style={{ height: 1, background: "#f1f5f9", margin: "4px 0" }} />
+          </>}
+          <Item label="🔑 Trocar Senha" onClick={onSenha} />
           <div style={{ height: 1, background: "#f1f5f9" }} />
-          <button onClick={() => { onLogout(); setAberto(false); }}
-            style={{ display: "block", width: "100%", padding: "10px 16px", fontSize: 13, color: "#dc2626", background: "white", border: "none", textAlign: "left", cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 600 }}
-            onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
-            onMouseLeave={e => e.currentTarget.style.background = "white"}>Sair</button>
+          <Item label="Sair" onClick={onLogout} danger />
         </div>
       )}
     </div>
@@ -1416,16 +1428,6 @@ export default function App() {
       <div style={{ background: "#272e40", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <Logo size={20} dark={false} />
-          {isAdmin && (
-            <div style={{ display: "flex", gap: 2 }}>
-              {[{ key: "tarefas", label: "Tarefas" }, { key: "clientes", label: "Clientes" }, { key: "obrigacoes", label: "Obrigações" }, { key: "usuarios", label: "Usuários" }].map(item => (
-                <button key={item.key} onClick={() => setTela(item.key)}
-                  style={{ background: tela === item.key ? "rgba(255,255,255,0.2)" : "transparent", border: "none", borderRadius: 8, color: tela === item.key ? "white" : "rgba(255,255,255,0.6)", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: tela === item.key ? 700 : 400, borderBottom: tela === item.key ? "2px solid white" : "2px solid transparent" }}>
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {isAdmin && tela === "tarefas" && <>
@@ -1435,6 +1437,8 @@ export default function App() {
           <MenuUsuario
             profile={profile}
             isAdmin={isAdmin}
+            tela={tela}
+            onTela={setTela}
             onSenha={() => setModalSenha(true)}
             onLogout={handleLogout}
           />
