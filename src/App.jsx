@@ -803,11 +803,7 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar, inline }) {
         )}
       </div>
   );
-  return inline ? conteudo : (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
-      {conteudo}
-    </div>
-  );
+  return inline ? conteudo : <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>{conteudo}</div>;
 }
 
 
@@ -961,11 +957,7 @@ function PainelObrigacoes({ clientes, profiles, onAtualizar, onFechar, inline })
         </div>
       </div>
   );
-  return inline ? conteudo : (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
-      {conteudo}
-    </div>
-  );
+  return inline ? conteudo : <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>{conteudo}</div>;
 }
 
 // ─── PAINEL USUÁRIOS ───────────────────────────────────────────────────────
@@ -1043,14 +1035,8 @@ function PainelUsuarios({ profiles, onAtualizar, onFechar, inline }) {
         )}
       </div>
   );
-  return inline ? conteudo : (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
-      {conteudo}
-    </div>
-  );
+  return inline ? conteudo : <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>{conteudo}</div>;
 }
-
-// ─── MODAL REPLICAR ────────────────────────────────────────────────────────
 function ModalReplicar({ tarefa, clientes, profiles, onFechar, onConcluir }) {
   const [selecionados, setSelecionados] = useState([]); const [responsavelPadrao, setResponsavelPadrao] = useState(""); const [loading, setLoading] = useState(false); const [busca, setBusca] = useState("");
   const clientesFiltrados = clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase()) && c.nome !== tarefa.cliente);
