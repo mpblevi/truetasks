@@ -414,7 +414,7 @@ function DateFiltro({ value, onChange, smStyle }) {
 }
 
 // ─── MENU USUÁRIO (header) ─────────────────────────────────────────────────
-function MenuUsuario({ profile, isAdmin, gerandoRecorrentes, onClientes, onObrigacoes, onUsuarios, onGerarMes, onSenha, onLogout }) {
+function MenuUsuario({ profile, isAdmin, onSenha, onLogout }) {
   const [aberto, setAberto] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -422,18 +422,6 @@ function MenuUsuario({ profile, isAdmin, gerandoRecorrentes, onClientes, onObrig
     document.addEventListener("mousedown", fechar);
     return () => document.removeEventListener("mousedown", fechar);
   }, []);
-
-  const itens = [
-    ...(isAdmin ? [
-      { label: "👥 Clientes", action: onClientes },
-      { label: "📋 Obrigações", action: onObrigacoes },
-      { label: "👤 Usuários", action: onUsuarios },
-      { label: "📅 Gerar Próximo Mês", action: onGerarMes, disabled: gerandoRecorrentes },
-      { divider: true },
-    ] : []),
-    { label: "🔑 Trocar Senha", action: onSenha },
-    { label: "Sair", action: onLogout, danger: true },
-  ];
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
@@ -445,17 +433,17 @@ function MenuUsuario({ profile, isAdmin, gerandoRecorrentes, onClientes, onObrig
         <span style={{ fontSize: 10, opacity: 0.7 }}>{aberto ? "▲" : "▼"}</span>
       </button>
       {aberto && (
-        <div style={{ position: "fixed", zIndex: 9999, background: "white", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", minWidth: 200, overflow: "hidden" }}
+        <div style={{ position: "fixed", zIndex: 9999, background: "white", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.15)", minWidth: 180, overflow: "hidden" }}
           ref={el => { if (el && ref.current) { const r = ref.current.getBoundingClientRect(); el.style.top = (r.bottom + 4) + "px"; el.style.right = (window.innerWidth - r.right) + "px"; } }}>
-          {itens.map((item, i) => item.divider
-            ? <div key={i} style={{ height: 1, background: "#f1f5f9", margin: "4px 0" }} />
-            : <button key={i} disabled={item.disabled} onClick={() => { item.action(); setAberto(false); }}
-                style={{ display: "block", width: "100%", padding: "10px 16px", fontSize: 13, color: item.danger ? "#dc2626" : "#1e293b", background: "white", border: "none", textAlign: "left", cursor: item.disabled ? "not-allowed" : "pointer", fontFamily: "'Inter', sans-serif", fontWeight: item.danger ? 600 : 400, opacity: item.disabled ? 0.5 : 1 }}
-                onMouseEnter={e => { if (!item.disabled) e.currentTarget.style.background = item.danger ? "#fee2e2" : "#f8fafc"; }}
-                onMouseLeave={e => e.currentTarget.style.background = "white"}>
-                {item.label}
-              </button>
-          )}
+          <button onClick={() => { onSenha(); setAberto(false); }}
+            style={{ display: "block", width: "100%", padding: "10px 16px", fontSize: 13, color: "#1e293b", background: "white", border: "none", textAlign: "left", cursor: "pointer", fontFamily: "'Inter', sans-serif" }}
+            onMouseEnter={e => e.currentTarget.style.background = "#f8fafc"}
+            onMouseLeave={e => e.currentTarget.style.background = "white"}>🔑 Trocar Senha</button>
+          <div style={{ height: 1, background: "#f1f5f9" }} />
+          <button onClick={() => { onLogout(); setAberto(false); }}
+            style={{ display: "block", width: "100%", padding: "10px 16px", fontSize: 13, color: "#dc2626", background: "white", border: "none", textAlign: "left", cursor: "pointer", fontFamily: "'Inter', sans-serif", fontWeight: 600 }}
+            onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
+            onMouseLeave={e => e.currentTarget.style.background = "white"}>Sair</button>
         </div>
       )}
     </div>
@@ -705,7 +693,7 @@ function maskCNPJ(v) {
   return v.replace(/\D/g,"").replace(/(\d{2})(\d)/,"$1.$2").replace(/(\d{3})(\d)/,"$1.$2").replace(/(\d{3})(\d{4})/,"$1/$2").replace(/(\/\d{4})(\d)/,"$1-$2").slice(0,18);
 }
 
-function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
+function PainelClientes({ clientes, profiles, onAtualizar, onFechar, inline }) {
   const formVazio = { nome: "", cnpj: "", codigo: "", responsavel_id: "", revisor_id: "", cliente_desde: "" };
   const [modalNovo, setModalNovo] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -752,12 +740,11 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
 
   const totalInativos = clientes.filter(c => c.ativo === false).length;
 
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
-      <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 640, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+  const conteudo = (
+    <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: inline ? "100%" : 640, maxHeight: inline ? "none" : "90vh", overflowY: inline ? "visible" : "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#024aab" }}>Gerenciar Clientes</div>
-          <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>
+          {!inline && <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>}
         </div>
         {msg && <div style={{ background: "#dcfce7", border: "1px solid #22c55e", borderRadius: 8, padding: "10px 14px", color: "#15803d", fontSize: 13, marginBottom: 16 }}>{msg}</div>}
         <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 12 }}>
@@ -815,13 +802,17 @@ function PainelClientes({ clientes, profiles, onAtualizar, onFechar }) {
           </div>
         )}
       </div>
+  );
+  return inline ? conteudo : (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
+      {conteudo}
     </div>
   );
 }
 
 
 // ─── PAINEL OBRIGAÇÕES PADRÃO ──────────────────────────────────────────────
-function PainelObrigacoes({ clientes, profiles, onAtualizar, onFechar }) {
+function PainelObrigacoes({ clientes, profiles, onAtualizar, onFechar, inline }) {
   const [obrigacoes, setObrigacoes] = useState([]);
   const [form, setForm] = useState({ tipo: "DCTFWEB", dia_prazo_interno: 15, dia_prazo_legal: 20, periodicidade: "mensal", mes_prazo: 7 });
   const [loading, setLoading] = useState(false);
@@ -868,12 +859,11 @@ function PainelObrigacoes({ clientes, profiles, onAtualizar, onFechar }) {
 
   const DIAS = Array.from({ length: 28 }, (_, i) => i + 1);
 
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
-      <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 720, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+  const conteudo = (
+      <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: inline ? "100%" : 720, maxHeight: inline ? "none" : "90vh", overflowY: inline ? "visible" : "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#024aab" }}>Obrigações Padrão</div>
-          <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>
+          {!inline && <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>}
         </div>
 
         {msg && <div style={{ background: "#dcfce7", border: "1px solid #22c55e", borderRadius: 8, padding: "10px 14px", color: "#15803d", fontSize: 13, marginBottom: 16 }}>{msg}</div>}
@@ -970,12 +960,16 @@ function PainelObrigacoes({ clientes, profiles, onAtualizar, onFechar }) {
           {clienteSel && obrigacoes.length === 0 && <div style={{ color: "#94a3b8", fontSize: 13 }}>Cadastre obrigações padrão primeiro.</div>}
         </div>
       </div>
+  );
+  return inline ? conteudo : (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
+      {conteudo}
     </div>
   );
 }
 
 // ─── PAINEL USUÁRIOS ───────────────────────────────────────────────────────
-function PainelUsuarios({ profiles, onAtualizar, onFechar }) {
+function PainelUsuarios({ profiles, onAtualizar, onFechar, inline }) {
   const [modalNovo, setModalNovo] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [form, setForm] = useState({ nome: "", usuario: "", senha: "", cargo: "colaborador" });
@@ -1012,12 +1006,11 @@ function PainelUsuarios({ profiles, onAtualizar, onFechar }) {
 
   async function excluirUsuario(id, nome) { if (!window.confirm(`Remover "${nome}"?`)) return; await supabase.from("profiles").delete().eq("id", id); onAtualizar(); }
 
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
-      <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+  const conteudo = (
+      <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: inline ? "100%" : 560, maxHeight: inline ? "none" : "90vh", overflowY: inline ? "visible" : "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
           <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 800, color: "#024aab" }}>Gerenciar Usuários</div>
-          <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>
+          {!inline && <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>}
         </div>
         {msg && <div style={{ background: "#dcfce7", border: "1px solid #22c55e", borderRadius: 8, padding: "10px 14px", color: "#15803d", fontSize: 13, marginBottom: 16 }}>{msg}</div>}
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
@@ -1049,6 +1042,10 @@ function PainelUsuarios({ profiles, onAtualizar, onFechar }) {
           </div>
         )}
       </div>
+  );
+  return inline ? conteudo : (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
+      {conteudo}
     </div>
   );
 }
@@ -1128,7 +1125,7 @@ export default function App() {
 
   const [relatorio, setRelatorio] = useState(false); const [modal, setModal] = useState(false); const [editando, setEditando] = useState(null);
   const [detalhes, setDetalhes] = useState(null);
-  const [painelUsuarios, setPainelUsuarios] = useState(false); const [painelClientes, setPainelClientes] = useState(false); const [painelObrigacoes, setPainelObrigacoes] = useState(false);
+  const [tela, setTela] = useState("tarefas"); // "tarefas" | "clientes" | "obrigacoes" | "usuarios"
   const [obrigacoes, setObrigacoes] = useState([]); const [excecoes, setExcecoes] = useState([]);
   const [modalReplicar, setModalReplicar] = useState(null); const [modalAcao, setModalAcao] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
@@ -1424,31 +1421,34 @@ export default function App() {
     <div style={{ minHeight: "100vh", width: "100%", background: "#f9fafc", fontFamily: "'Inter', sans-serif", color: "#1e293b" }}>
       <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-      {painelUsuarios && <PainelUsuarios profiles={profiles} onAtualizar={carregarProfiles} onFechar={() => setPainelUsuarios(false)} />}
-      {painelObrigacoes && <PainelObrigacoes clientes={clientes} profiles={profiles} onAtualizar={() => { carregarObrigacoes(); carregarExcecoes(); }} onFechar={() => setPainelObrigacoes(false)} />}
-      {painelClientes && <PainelClientes clientes={clientes} profiles={profiles} onAtualizar={carregarClientes} onFechar={() => setPainelClientes(false)} />}
       {modalReplicar && <ModalReplicar tarefa={modalReplicar} clientes={clientes} profiles={profiles} onFechar={() => setModalReplicar(null)} onConcluir={async (n) => { setModalReplicar(null); await carregarTarefas(); setMsgReplicar(`${n} tarefa(s) replicada(s)!`); setTimeout(() => setMsgReplicar(""), 4000); }} />}
       {modalAcao && <ModalAcao tipo={modalAcao.tipo} tarefa={modalAcao.tarefa} profiles={profiles} onFechar={() => setModalAcao(null)} onSalvar={async () => { setModalAcao(null); await carregarTarefas(); }} />}
-
-      {/* MODAL RELATÓRIO / DASHBOARD */}
       {relatorio && <ModalRelatorio tarefas={tarefasEnriquecidas} profiles={profiles} onFechar={() => setRelatorio(false)} />}
-
-      {/* MODAL TROCAR SENHA */}
       {modalSenha && <ModalTrocarSenha onFechar={() => setModalSenha(false)} />}
 
       {/* HEADER */}
       <div style={{ background: "#272e40", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-        <Logo size={20} dark={false} />
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <Logo size={20} dark={false} />
+          {isAdmin && (
+            <div style={{ display: "flex", gap: 2 }}>
+              {[{ key: "tarefas", label: "Tarefas" }, { key: "clientes", label: "Clientes" }, { key: "obrigacoes", label: "Obrigações" }, { key: "usuarios", label: "Usuários" }].map(item => (
+                <button key={item.key} onClick={() => setTela(item.key)}
+                  style={{ background: tela === item.key ? "rgba(255,255,255,0.2)" : "transparent", border: "none", borderRadius: 8, color: tela === item.key ? "white" : "rgba(255,255,255,0.6)", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: tela === item.key ? 700 : 400, borderBottom: tela === item.key ? "2px solid white" : "2px solid transparent" }}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {isAdmin && <button onClick={abrirNova} style={{ background: "white", border: "none", borderRadius: 8, color: "#272e40", padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Nova Tarefa</button>}
+          {isAdmin && tela === "tarefas" && <>
+            <button onClick={gerarProximoMes} disabled={gerandoRecorrentes} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, opacity: gerandoRecorrentes ? 0.7 : 1 }}>Gerar Próximo Mês</button>
+            <button onClick={abrirNova} style={{ background: "white", border: "none", borderRadius: 8, color: "#272e40", padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Nova Tarefa</button>
+          </>}
           <MenuUsuario
             profile={profile}
             isAdmin={isAdmin}
-            gerandoRecorrentes={gerandoRecorrentes}
-            onClientes={() => setPainelClientes(true)}
-            onObrigacoes={() => setPainelObrigacoes(true)}
-            onUsuarios={() => setPainelUsuarios(true)}
-            onGerarMes={gerarProximoMes}
             onSenha={() => setModalSenha(true)}
             onLogout={handleLogout}
           />
@@ -1458,6 +1458,12 @@ export default function App() {
       <div style={{ padding: "16px 24px" }}>
         {msgRecorrente && <div style={{ background: "#dcfce7", border: "1px solid #22c55e", borderRadius: 10, padding: "10px 20px", color: "#15803d", fontSize: 14, marginBottom: 12 }}>{msgRecorrente}</div>}
         {msgReplicar && <div style={{ background: "#dce8f7", border: "1px solid #3b82f6", borderRadius: 10, padding: "10px 20px", color: "#024aab", fontSize: 14, marginBottom: 12 }}>{msgReplicar}</div>}
+
+        {tela === "clientes" && <PainelClientes clientes={clientes} profiles={profiles} onAtualizar={carregarClientes} inline />}
+        {tela === "obrigacoes" && <PainelObrigacoes clientes={clientes} profiles={profiles} onAtualizar={() => { carregarObrigacoes(); carregarExcecoes(); }} inline />}
+        {tela === "usuarios" && <PainelUsuarios profiles={profiles} onAtualizar={carregarProfiles} inline />}
+
+        {tela === "tarefas" && <>
 
         {/* BARRA SUPERIOR */}
         <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
@@ -1598,6 +1604,7 @@ export default function App() {
           </div>
         </div>
       )}
+        </>}
     </div>
   );
 }
