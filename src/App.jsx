@@ -413,6 +413,52 @@ function DateFiltro({ value, onChange, smStyle }) {
   );
 }
 
+// ─── MODAL TROCAR SENHA ────────────────────────────────────────────────────
+function ModalTrocarSenha({ onFechar }) {
+  const [senhaAtual, setSenhaAtual] = useState("");
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmar, setConfirmar] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState("");
+  const [sucesso, setSucesso] = useState(false);
+
+  async function salvar() {
+    setErro("");
+    if (!senhaAtual.trim() || !novaSenha.trim() || !confirmar.trim()) { setErro("Preencha todos os campos."); return; }
+    if (novaSenha.length < 6) { setErro("A nova senha precisa ter pelo menos 6 caracteres."); return; }
+    if (novaSenha !== confirmar) { setErro("As senhas não coincidem."); return; }
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({ password: novaSenha });
+    if (error) { setErro("Erro ao alterar senha. Tente fazer logout e login novamente."); setLoading(false); return; }
+    setSucesso(true); setLoading(false);
+    setTimeout(() => onFechar(), 2000);
+  }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 500, padding: 20 }}>
+      <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 16, padding: 32, width: "100%", maxWidth: 400, boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+          <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 17, fontWeight: 800, color: "#024aab" }}>Trocar Senha</div>
+          <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 22, cursor: "pointer" }}>×</button>
+        </div>
+        {sucesso && <div style={{ background: "#dcfce7", border: "1px solid #22c55e", borderRadius: 8, padding: "10px 14px", color: "#15803d", fontSize: 13, marginBottom: 16 }}>✅ Senha alterada com sucesso!</div>}
+        {erro && <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 8, padding: "10px 14px", color: "#dc2626", fontSize: 13, marginBottom: 16 }}>{erro}</div>}
+        {!sucesso && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div><label style={LABEL}>Senha atual</label><input type="password" value={senhaAtual} onChange={e => setSenhaAtual(e.target.value)} placeholder="••••••••" style={INPUT} /></div>
+            <div><label style={LABEL}>Nova senha</label><input type="password" value={novaSenha} onChange={e => setNovaSenha(e.target.value)} placeholder="Mínimo 6 caracteres" style={INPUT} /></div>
+            <div><label style={LABEL}>Confirmar nova senha</label><input type="password" value={confirmar} onChange={e => setConfirmar(e.target.value)} placeholder="Repita a nova senha" style={INPUT} onKeyDown={e => e.key === "Enter" && salvar()} /></div>
+            <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+              <button onClick={onFechar} style={{ flex: 1, background: "white", border: "1px solid #e2e8f0", borderRadius: 9, color: "#64748b", padding: "10px", fontSize: 14, cursor: "pointer" }}>Cancelar</button>
+              <button onClick={salvar} disabled={loading} style={{ ...BTN_PRIMARY, flex: 2, width: "auto", opacity: loading ? 0.7 : 1 }}>{loading ? "Salvando..." : "Alterar Senha"}</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── MODAL RELATÓRIO / DASHBOARD ──────────────────────────────────────────
 function ModalRelatorio({ tarefas, profiles, onFechar }) {
   const total = tarefas.length;
@@ -1087,6 +1133,8 @@ export default function App() {
   async function carregarExcecoes() { const { data } = await supabase.from("cliente_obrigacoes_excecoes").select("*"); setExcecoes(data || []); }
   async function handleLogout() { await supabase.auth.signOut(); setUser(null); setProfile(null); setTarefas([]); }
 
+  const [modalSenha, setModalSenha] = useState(false);
+
   function abrirNova() { setEditando(null); setForm({ ...formInicial, responsavel_id: user.id }); setModal(true); }
   function abrirEditar(t) {
     const clienteObj = clientes.find(c => c.nome === t.cliente);
@@ -1336,11 +1384,15 @@ export default function App() {
       {/* MODAL RELATÓRIO / DASHBOARD */}
       {relatorio && <ModalRelatorio tarefas={tarefasEnriquecidas} profiles={profiles} onFechar={() => setRelatorio(false)} />}
 
+      {/* MODAL TROCAR SENHA */}
+      {modalSenha && <ModalTrocarSenha onFechar={() => setModalSenha(false)} />}
+
       {/* HEADER */}
       <div style={{ background: "#272e40", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <Logo size={20} dark={false} />
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <div style={{ textAlign: "right" }}><div style={{ fontSize: 14, fontWeight: 600, color: "white" }}>{profile.nome}</div><div style={{ fontSize: 11, color: isAdmin ? "#fde68a" : "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: 1 }}>{isAdmin ? "Admin" : "Colaborador"}</div></div>
+          <button onClick={() => setModalSenha(true)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "rgba(255,255,255,0.8)", padding: "8px 14px", fontSize: 13, cursor: "pointer" }}>🔑 Senha</button>
           {isAdmin && (<>
             <button onClick={() => setPainelClientes(true)} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Clientes</button>
               <button onClick={() => setPainelObrigacoes(true)} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, color: "white", padding: "8px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Obrigações</button>
