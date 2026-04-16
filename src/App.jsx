@@ -1541,8 +1541,8 @@ export default function App() {
           </table>
         </div>
         <div style={{ marginTop: 10, fontSize: 12, color: "#94a3b8" }}>{filtradas.length} tarefa(s) {selecionados.length > 0 ? `— ${selecionados.length} selecionada(s)` : ""}</div>
-      </div>
         </>}
+      </div>
 
       {/* MODAL NOVA/EDITAR */}
       {modal && (
