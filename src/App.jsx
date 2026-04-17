@@ -587,7 +587,7 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
     if (anexo.salvo) {
       // Já salvo: apenas marcar como removido
       await supabase.from("tarefa_anexos").update({ removido: true }).eq("id", anexo.id);
-      await registrarAtividade(tarefa.id, profile.id, profile.nome, "anexo_removido", `Anexo "${anexo.nome_arquivo}" marcado como removido (v${anexo.versao || versaoAtual})`);
+      await registrarAtividade(tarefa.id, profile.id, profile.nome, "anexo_removido", `Anexo "${anexo.nome_arquivo}" marcado como removido`);
     } else {
       // Ainda não salvo: excluir de verdade
       if (!window.confirm(`Remover "${anexo.nome_arquivo}"?`)) return;
