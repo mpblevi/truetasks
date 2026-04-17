@@ -1475,7 +1475,7 @@ export default function App() {
       const isDezembroCompetencia = mes === "12";
 
       // Gerar baseado nas obrigações padrão para cada cliente
-      for (const cliente of clientes) {
+      for (const cliente of clientes.filter(c => c.ativo !== false)) {
         const excecoesCliente = excAtuais.filter(e => e.cliente_id === cliente.id).map(e => e.obrigacao_id);
 
         // Filtra obrigações: sempre inclui mensais, inclui anuais só em dezembro
@@ -1516,8 +1516,9 @@ export default function App() {
       }
     } else {
       // Fallback: usar tarefas recorrentes existentes
+      const clientesAtivos = new Set(clientes.filter(c => c.ativo !== false).map(c => c.nome));
       const porChave = {};
-      todasRecorrentes.forEach(t => {
+      todasRecorrentes.filter(t => clientesAtivos.has(t.cliente)).forEach(t => {
         const chave = t.cliente + "||" + t.tipo;
         if (!porChave[chave] || t.prazo_interno > porChave[chave].prazo_interno) porChave[chave] = t;
       });
