@@ -522,30 +522,48 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
   const [aba, setAba] = useState("atividade");
   const [atividades, setAtividades] = useState([]);
   const [anexos, setAnexos] = useState([]);
+  const [versoes, setVersoes] = useState([]);
   const [comentario, setComentario] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [salvandoVersao, setSalvandoVersao] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [erroUpload, setErroUpload] = useState("");
   const fileRef = useRef(null);
 
-  useEffect(() => { carregarAtividades(); carregarAnexos(); }, []);
+  useEffect(() => { carregarTudo(); }, []);
 
-  async function carregarAtividades() {
-    const { data } = await supabase.from("tarefa_atividades").select("*").eq("tarefa_id", tarefa.id).order("created_at", { ascending: false });
-    setAtividades(data || []);
+  async function carregarTudo() {
+    const [{ data: ativ }, { data: anex }, { data: vers }] = await Promise.all([
+      supabase.from("tarefa_atividades").select("*").eq("tarefa_id", tarefa.id).order("created_at", { ascending: false }),
+      supabase.from("tarefa_anexos").select("*").eq("tarefa_id", tarefa.id).order("created_at", { ascending: false }),
+      supabase.from("tarefa_versoes").select("*").eq("tarefa_id", tarefa.id).order("versao", { ascending: false }),
+    ]);
+    setAtividades(ativ || []);
+    setAnexos(anex || []);
+    setVersoes(vers || []);
   }
 
-  async function carregarAnexos() {
-    const { data } = await supabase.from("tarefa_anexos").select("*").eq("tarefa_id", tarefa.id).order("created_at", { ascending: false });
-    setAnexos(data || []);
+  const versaoAtual = versoes.length > 0 ? versoes[0].versao : 0;
+  const temItensNaoSalvos = [...anexos, ...atividades.filter(a => a.tipo === "comentario")].some(x => !x.salvo);
+
+  async function salvarVersao() {
+    if (!temItensNaoSalvos) return;
+    setSalvandoVersao(true);
+    const novaVersao = versaoAtual + 1;
+    await supabase.from("tarefa_versoes").insert({ tarefa_id: tarefa.id, usuario_id: profile.id, usuario_nome: profile.nome, versao: novaVersao });
+    await supabase.from("tarefa_anexos").update({ salvo: true, versao: novaVersao }).eq("tarefa_id", tarefa.id).eq("salvo", false);
+    await supabase.from("tarefa_atividades").update({ salvo: true, versao: novaVersao }).eq("tarefa_id", tarefa.id).eq("salvo", false).eq("tipo", "comentario");
+    await registrarAtividade(tarefa.id, profile.id, profile.nome, "versao", `Versão ${novaVersao} salva por ${profile.nome}`);
+    await carregarTudo();
+    setSalvandoVersao(false);
   }
 
   async function enviarComentario() {
     if (!comentario.trim()) return;
     setSalvando(true);
-    await supabase.from("tarefa_atividades").insert({ tarefa_id: tarefa.id, usuario_id: profile.id, usuario_nome: profile.nome, tipo: "comentario", descricao: comentario.trim() });
+    await supabase.from("tarefa_atividades").insert({ tarefa_id: tarefa.id, usuario_id: profile.id, usuario_nome: profile.nome, tipo: "comentario", descricao: comentario.trim(), salvo: false });
     setComentario("");
-    await carregarAtividades();
+    await carregarTudo();
     setSalvando(false);
   }
 
@@ -557,8 +575,8 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
     const caminho = `${tarefa.id}/${Date.now()}_${file.name}`;
     const { error } = await supabase.storage.from("anexos").upload(caminho, file);
     if (!error) {
-      await supabase.from("tarefa_anexos").insert({ tarefa_id: tarefa.id, usuario_id: profile.id, usuario_nome: profile.nome, nome_arquivo: file.name, caminho, tamanho: file.size });
-      await carregarAnexos();
+      await supabase.from("tarefa_anexos").insert({ tarefa_id: tarefa.id, usuario_id: profile.id, usuario_nome: profile.nome, nome_arquivo: file.name, caminho, tamanho: file.size, salvo: false });
+      await carregarTudo();
     } else {
       setErroUpload(`Erro ao enviar: ${error.message}`);
     }
@@ -567,13 +585,31 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
   }
 
   async function excluirAnexo(anexo) {
-    if (!window.confirm(`Remover "${anexo.nome_arquivo}"?`)) return;
-    await supabase.storage.from("anexos").remove([anexo.caminho]);
-    await supabase.from("tarefa_anexos").delete().eq("id", anexo.id);
-    await carregarAnexos();
+    if (anexo.salvo) {
+      // Já salvo: apenas marcar como removido
+      await supabase.from("tarefa_anexos").update({ removido: true }).eq("id", anexo.id);
+      await registrarAtividade(tarefa.id, profile.id, profile.nome, "anexo_removido", `Anexo "${anexo.nome_arquivo}" marcado como removido (v${anexo.versao || versaoAtual})`);
+    } else {
+      // Ainda não salvo: excluir de verdade
+      if (!window.confirm(`Remover "${anexo.nome_arquivo}"?`)) return;
+      await supabase.storage.from("anexos").remove([anexo.caminho]);
+      await supabase.from("tarefa_anexos").delete().eq("id", anexo.id);
+    }
+    await carregarTudo();
+  }
+
+  async function excluirComentario(ativ) {
+    if (ativ.salvo) {
+      await supabase.from("tarefa_atividades").update({ removido: true }).eq("id", ativ.id);
+    } else {
+      if (!window.confirm("Remover este comentário?")) return;
+      await supabase.from("tarefa_atividades").delete().eq("id", ativ.id);
+    }
+    await carregarTudo();
   }
 
   async function baixarAnexo(anexo) {
+    if (anexo.removido) return;
     const { data } = await supabase.storage.from("anexos").createSignedUrl(anexo.caminho, 60);
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   }
@@ -593,7 +629,6 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
 
   const stStyle = STATUS_STYLE[tarefa.status] || { bg: "#f1f5f9", border: "#cbd5e1", text: "#475569" };
   const sitStyle = SITUACAO_STYLE[tarefa.situacaoCalc] || { bg: "#f1f5f9", border: "#cbd5e1", color: "#475569" };
-
   const ABAS = [{ key: "atividade", label: "Atividade" }, { key: "comentarios", label: "Comentários" }, { key: "anexos", label: "Anexos" }];
 
   return (
@@ -610,6 +645,7 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
                 {tarefa.competencia && <span style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", fontSize: 11, color: "#475569", fontWeight: 600 }}>{tarefa.competencia}</span>}
                 <span style={{ background: stStyle.bg, border: `1px solid ${stStyle.border}`, borderRadius: 20, padding: "2px 10px", fontSize: 11, color: stStyle.text, fontWeight: 600 }}>{tarefa.status}</span>
                 {tarefa.situacaoCalc && <span style={{ background: sitStyle.bg, border: `1px solid ${sitStyle.border}`, borderRadius: 20, padding: "2px 10px", fontSize: 11, color: sitStyle.color, fontWeight: 600 }}>{tarefa.situacaoCalc}</span>}
+                {versaoAtual > 0 && <span style={{ background: "#f0fdf4", border: "1px solid #22c55e", borderRadius: 20, padding: "2px 10px", fontSize: 11, color: "#15803d", fontWeight: 600 }}>v{versaoAtual}</span>}
               </div>
               <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 12, color: "#64748b", flexWrap: "wrap" }}>
                 {tarefa.responsavel_nome && <span>Resp: <strong>{tarefa.responsavel_nome}</strong></span>}
@@ -618,7 +654,13 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
                 {tarefa.prazo_legal && <span>Prazo Legal: <strong>{formatDate(tarefa.prazo_legal)}</strong></span>}
               </div>
             </div>
-            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center" }}>
+              {temItensNaoSalvos && (
+                <button onClick={salvarVersao} disabled={salvandoVersao}
+                  style={{ background: "#16a34a", border: "none", borderRadius: 8, color: "white", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, opacity: salvandoVersao ? 0.7 : 1 }}>
+                  {salvandoVersao ? "Salvando..." : "💾 Salvar Versão"}
+                </button>
+              )}
               {(isAdmin || tarefa.responsavel_id === profile.id) && <button onClick={onEditar} style={{ background: "#dce8f7", border: "none", borderRadius: 8, color: "#024aab", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Editar</button>}
               <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 24, cursor: "pointer", lineHeight: 1 }}>×</button>
             </div>
@@ -630,8 +672,8 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
               <button key={a.key} onClick={() => setAba(a.key)}
                 style={{ padding: "8px 20px", fontSize: 13, fontWeight: aba === a.key ? 700 : 400, color: aba === a.key ? "#024aab" : "#64748b", background: "none", border: "none", borderBottom: aba === a.key ? "2px solid #024aab" : "2px solid transparent", cursor: "pointer", marginBottom: -1 }}>
                 {a.label}
-                {a.key === "comentarios" && atividades.filter(x => x.tipo === "comentario").length > 0 && <span style={{ background: "#024aab", color: "white", borderRadius: 10, padding: "1px 6px", fontSize: 10, marginLeft: 6 }}>{atividades.filter(x => x.tipo === "comentario").length}</span>}
-                {a.key === "anexos" && anexos.length > 0 && <span style={{ background: "#64748b", color: "white", borderRadius: 10, padding: "1px 6px", fontSize: 10, marginLeft: 6 }}>{anexos.length}</span>}
+                {a.key === "comentarios" && atividades.filter(x => x.tipo === "comentario" && !x.removido).length > 0 && <span style={{ background: "#024aab", color: "white", borderRadius: 10, padding: "1px 6px", fontSize: 10, marginLeft: 6 }}>{atividades.filter(x => x.tipo === "comentario" && !x.removido).length}</span>}
+                {a.key === "anexos" && anexos.filter(x => !x.removido).length > 0 && <span style={{ background: "#64748b", color: "white", borderRadius: 10, padding: "1px 6px", fontSize: 10, marginLeft: 6 }}>{anexos.filter(x => !x.removido).length}</span>}
               </button>
             ))}
           </div>
@@ -654,8 +696,10 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
               )}
               {atividades.filter(a => a.tipo !== "comentario").map(a => (
                 <div key={a.id} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#dce8f7", color: "#024aab", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{(a.usuario_nome || "?")[0].toUpperCase()}</div>
-                  <div style={{ flex: 1, background: "#f8fafc", borderRadius: 10, padding: "10px 14px", border: "1px solid #e2e8f0" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: a.tipo === "versao" ? "#dcfce7" : "#dce8f7", color: a.tipo === "versao" ? "#15803d" : "#024aab", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                    {a.tipo === "versao" ? "✓" : (a.usuario_nome || "?")[0].toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1, background: a.tipo === "versao" ? "#f0fdf4" : "#f8fafc", borderRadius: 10, padding: "10px 14px", border: `1px solid ${a.tipo === "versao" ? "#22c55e" : "#e2e8f0"}` }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                       <span style={{ fontSize: 12, fontWeight: 600, color: "#1e293b" }}>{a.usuario_nome}</span>
                       <span style={{ fontSize: 11, color: "#94a3b8" }}>{formatTS(a.created_at)}</span>
@@ -682,14 +726,23 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
                 <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 13, padding: "30px 0" }}>Nenhum comentário ainda.</div>
               )}
               {atividades.filter(a => a.tipo === "comentario").map(a => (
-                <div key={a.id} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <div key={a.id} style={{ display: "flex", gap: 12, alignItems: "flex-start", opacity: a.removido ? 0.6 : 1 }}>
                   <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#dce8f7", color: "#024aab", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{(a.usuario_nome || "?")[0].toUpperCase()}</div>
-                  <div style={{ flex: 1, background: "#f8fafc", borderRadius: 10, padding: "10px 14px", border: "1px solid #e2e8f0" }}>
+                  <div style={{ flex: 1, background: a.removido ? "#f8fafc" : "#f8fafc", borderRadius: 10, padding: "10px 14px", border: `1px solid ${a.removido ? "#fca5a5" : "#e2e8f0"}` }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "#1e293b" }}>{a.usuario_nome}</span>
-                      <span style={{ fontSize: 11, color: "#94a3b8" }}>{formatTS(a.created_at)}</span>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "#1e293b" }}>{a.usuario_nome}</span>
+                        {!a.salvo && <span style={{ background: "#fef9c3", border: "1px solid #fde047", borderRadius: 4, padding: "1px 6px", fontSize: 10, color: "#854d0e", fontWeight: 600 }}>Não salvo</span>}
+                        {a.removido && <span style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 4, padding: "1px 6px", fontSize: 10, color: "#dc2626", fontWeight: 600 }}>Removido</span>}
+                      </div>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        <span style={{ fontSize: 11, color: "#94a3b8" }}>{formatTS(a.created_at)}</span>
+                        {!a.removido && (isAdmin || a.usuario_id === profile.id) && (
+                          <button onClick={() => excluirComentario(a)} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 14, padding: "0 2px", lineHeight: 1 }} title={a.salvo ? "Marcar como removido" : "Excluir"}>✕</button>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 13, color: "#1e293b", whiteSpace: "pre-wrap" }}>{a.descricao}</div>
+                    <div style={{ fontSize: 13, color: "#1e293b", whiteSpace: "pre-wrap", textDecoration: a.removido ? "line-through" : "none" }}>{a.descricao}</div>
                   </div>
                 </div>
               ))}
@@ -712,14 +765,18 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
                 <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 13, padding: "20px 0" }}>Nenhum anexo ainda.</div>
               )}
               {anexos.map(a => (
-                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 16px" }}>
+                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "#f8fafc", border: `1px solid ${a.removido ? "#fca5a5" : "#e2e8f0"}`, borderRadius: 10, padding: "12px 16px", opacity: a.removido ? 0.7 : 1 }}>
                   <span style={{ fontSize: 22 }}>📄</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.nome_arquivo}</div>
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{formatTamanho(a.tamanho)} · {a.usuario_nome} · {formatTS(a.created_at)}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontWeight: 600, fontSize: 13, color: a.removido ? "#94a3b8" : "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: a.removido ? "line-through" : "none" }}>{a.nome_arquivo}</span>
+                      {!a.salvo && !a.removido && <span style={{ background: "#fef9c3", border: "1px solid #fde047", borderRadius: 4, padding: "1px 6px", fontSize: 10, color: "#854d0e", fontWeight: 600, whiteSpace: "nowrap" }}>Não salvo</span>}
+                      {a.removido && <span style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 4, padding: "1px 6px", fontSize: 10, color: "#dc2626", fontWeight: 600, whiteSpace: "nowrap" }}>Removido</span>}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{formatTamanho(a.tamanho)} · {a.usuario_nome} · {formatTS(a.created_at)}{a.versao ? ` · v${a.versao}` : ""}</div>
                   </div>
-                  <button onClick={() => baixarAnexo(a)} style={{ background: "#dce8f7", border: "none", borderRadius: 7, color: "#024aab", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>Baixar</button>
-                  {isAdmin && <button onClick={() => excluirAnexo(a)} style={{ background: "#fee2e2", border: "none", borderRadius: 7, color: "#dc2626", padding: "6px 10px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>✕</button>}
+                  {!a.removido && <button onClick={() => baixarAnexo(a)} style={{ background: "#dce8f7", border: "none", borderRadius: 7, color: "#024aab", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>Baixar</button>}
+                  {(isAdmin || a.usuario_id === profile.id) && <button onClick={() => excluirAnexo(a)} style={{ background: a.removido ? "#f1f5f9" : "#fee2e2", border: "none", borderRadius: 7, color: a.removido ? "#94a3b8" : "#dc2626", padding: "6px 10px", fontSize: 12, cursor: a.removido ? "default" : "pointer", fontWeight: 600 }} disabled={a.removido}>✕</button>}
                 </div>
               ))}
             </div>
