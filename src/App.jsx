@@ -7,9 +7,134 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const DOMAIN = "@truetasks.app";
-const TIPOS = ["DCTFWEB", "ECF", "ECD", "EFD CONTRIBUIÇÕES", "EFD FISCAL", "EFD REINF", "ESOCIAL", "FOLHA", "IRPF", "PGDAS"];
+const TIPOS = ["DCTFWEB", "ECF", "ECD", "EFD CONTRIBUIÇÕES", "EFD FISCAL", "EFD REINF", "ESOCIAL", "FOLHA", "PGDAS"];
 const STATUS_LIST = ["Aguardando Cliente", "Em Elaboração", "Enviado por Email", "Finalizado", "Pendente", "Revisão"];
 const SITUACAO_LIST = ["No Prazo", "A Vencer", "Vencido Internamente", "Vencido Legalmente", "Finalizado no Prazo", "Finalizado no Vencimento Legal", "Finalizado em Atraso"];
+
+// ─── CACHE DE FERIADOS ─────────────────────────────────────────────────────
+const feriadosCache = {};
+
+async function buscarFeriados(ano) {
+  if (feriadosCache[ano]) return feriadosCache[ano];
+  try {
+    const [nac, rj, df] = await Promise.all([
+      fetch(`https://brasilapi.com.br/api/feriados/v1/${ano}`).then(r => r.json()),
+      fetch(`https://brasilapi.com.br/api/feriados/v1/${ano}?state=RJ`).then(r => r.json()).catch(() => []),
+      fetch(`https://brasilapi.com.br/api/feriados/v1/${ano}?state=DF`).then(r => r.json()).catch(() => []),
+    ]);
+    const datas = new Set([
+      ...(Array.isArray(nac) ? nac : []).map(f => f.date),
+      ...(Array.isArray(rj) ? rj : []).map(f => f.date),
+      ...(Array.isArray(df) ? df : []).map(f => f.date),
+    ]);
+    feriadosCache[ano] = datas;
+    return datas;
+  } catch {
+    feriadosCache[ano] = new Set();
+    return new Set();
+  }
+}
+
+function isDiaUtil(data, feriados) {
+  const dow = data.getDay(); // 0=dom, 6=sab
+  if (dow === 0 || dow === 6) return false;
+  const iso = `${data.getFullYear()}-${String(data.getMonth()+1).padStart(2,"0")}-${String(data.getDate()).padStart(2,"0")}`;
+  return !feriados.has(iso);
+}
+
+function toISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+// Antecipa: volta até achar dia útil
+function anteriorUtil(d, feriados) {
+  const dt = new Date(d);
+  while (!isDiaUtil(dt, feriados)) dt.setDate(dt.getDate() - 1);
+  return toISO(dt);
+}
+
+// Posterga: avança até achar dia útil
+function proximoUtil(d, feriados) {
+  const dt = new Date(d);
+  while (!isDiaUtil(dt, feriados)) dt.setDate(dt.getDate() + 1);
+  return toISO(dt);
+}
+
+// Último dia útil do mês
+function ultimoDiaUtilMes(ano, mes, feriados) {
+  // mes é 1-12
+  const ultimoDia = new Date(ano, mes, 0); // último dia do mês
+  return anteriorUtil(ultimoDia, feriados);
+}
+
+// N-ésimo dia útil do mês
+function nesimoDiaUtil(ano, mes, n, feriados) {
+  const d = new Date(ano, mes - 1, 1);
+  let count = 0;
+  while (true) {
+    if (isDiaUtil(d, feriados)) { count++; if (count === n) return toISO(d); }
+    d.setDate(d.getDate() + 1);
+  }
+}
+
+// Calcula prazo legal de uma obrigação para uma competência (formato MM/AAAA)
+async function calcularPrazoLegal(tipo, competencia) {
+  if (!competencia) return null;
+  const [mm, yyyy] = competencia.split("/");
+  const mesComp = parseInt(mm);
+  const anoComp = parseInt(yyyy);
+
+  let anoRef, mesRef; // mês/ano de referência do prazo
+
+  switch (tipo) {
+    case "ECD": {
+      // Último dia útil de junho do ano seguinte
+      const feriados = await buscarFeriados(anoComp + 1);
+      return ultimoDiaUtilMes(anoComp + 1, 6, feriados);
+    }
+    case "ECF": {
+      // Último dia útil de julho do ano seguinte
+      const feriados = await buscarFeriados(anoComp + 1);
+      return ultimoDiaUtilMes(anoComp + 1, 7, feriados);
+    }
+    case "EFD CONTRIBUIÇÕES": {
+      // 10º dia útil do 2º mês subsequente
+      let m = mesComp + 2; let a = anoComp;
+      if (m > 12) { m -= 12; a++; }
+      const feriados = await buscarFeriados(a);
+      return nesimoDiaUtil(a, m, 10, feriados);
+    }
+    default: {
+      // Mês subsequente
+      mesRef = mesComp + 1; anoRef = anoComp;
+      if (mesRef > 12) { mesRef = 1; anoRef++; }
+    }
+  }
+
+  const feriados = await buscarFeriados(anoRef);
+
+  switch (tipo) {
+    case "DCTFWEB":
+      return ultimoDiaUtilMes(anoRef, mesRef, feriados);
+    case "EFD REINF":
+    case "ESOCIAL":
+    case "FOLHA": {
+      // Dia 15, antecipa se não útil
+      const d = new Date(anoRef, mesRef - 1, 15);
+      return anteriorUtil(d, feriados);
+    }
+    case "EFD FISCAL":
+      // Dia 20, sem ajuste (cai no próprio dia)
+      return `${anoRef}-${String(mesRef).padStart(2,"0")}-20`;
+    case "PGDAS": {
+      // Dia 20, posterga se não útil
+      const d = new Date(anoRef, mesRef - 1, 20);
+      return proximoUtil(d, feriados);
+    }
+    default:
+      return null;
+  }
+}
 
 const STATUS_STYLE = {
   "Aguardando Cliente": { bg: "#fff7ed", border: "#f97316", text: "#c2410c" },
@@ -1168,9 +1293,26 @@ function PainelObrigacoes({ clientes, profiles, onAtualizar, onFechar, inline })
     setExcecoes(exc || []);
   }
 
+  const DEFAULTS_TIPO = {
+    "DCTFWEB":          { dia_prazo_interno: 20, periodicidade: "mensal",  descricao_legal: "Último dia útil do mês subsequente" },
+    "EFD CONTRIBUIÇÕES":{ dia_prazo_interno: 5,  periodicidade: "mensal",  descricao_legal: "10º dia útil do 2º mês subsequente" },
+    "EFD FISCAL":       { dia_prazo_interno: 15, periodicidade: "mensal",  descricao_legal: "Dia 20 do mês subsequente (RJ)" },
+    "EFD REINF":        { dia_prazo_interno: 10, periodicidade: "mensal",  descricao_legal: "Dia 15 do mês subsequente (antecipa)" },
+    "ESOCIAL":          { dia_prazo_interno: 10, periodicidade: "mensal",  descricao_legal: "Dia 15 do mês subsequente (antecipa)" },
+    "FOLHA":            { dia_prazo_interno: 10, periodicidade: "mensal",  descricao_legal: "Dia 15 do mês subsequente (antecipa)" },
+    "PGDAS":            { dia_prazo_interno: 15, periodicidade: "mensal",  descricao_legal: "Dia 20 do mês subsequente (posterga)" },
+    "ECD":              { dia_prazo_interno: 15, periodicidade: "anual",   mes_prazo: 6, descricao_legal: "Último dia útil de junho (ano seguinte)" },
+    "ECF":              { dia_prazo_interno: 15, periodicidade: "anual",   mes_prazo: 7, descricao_legal: "Último dia útil de julho (ano seguinte)" },
+  };
+
+  function handleTipoChange(tipo) {
+    const def = DEFAULTS_TIPO[tipo] || {};
+    setForm(f => ({ ...f, tipo, dia_prazo_interno: def.dia_prazo_interno || 15, periodicidade: def.periodicidade || "mensal", mes_prazo: def.mes_prazo || f.mes_prazo }));
+  }
+
   async function criarObrigacao() {
     setLoading(true);
-    await supabase.from("obrigacoes_padrao").insert({ tipo: form.tipo, dia_prazo_interno: parseInt(form.dia_prazo_interno), dia_prazo_legal: parseInt(form.dia_prazo_legal), periodicidade: form.periodicidade, mes_prazo: form.periodicidade === "anual" ? parseInt(form.mes_prazo) : null, ativo: true });
+    await supabase.from("obrigacoes_padrao").insert({ tipo: form.tipo, dia_prazo_interno: parseInt(form.dia_prazo_interno), dia_prazo_legal: parseInt(form.dia_prazo_interno), periodicidade: form.periodicidade, mes_prazo: form.periodicidade === "anual" ? parseInt(form.mes_prazo) : null, ativo: true });
     setMsg(`Obrigação "${form.tipo}" criada!`);
     await carregar(); onAtualizar(); setLoading(false);
   }
@@ -1230,22 +1372,17 @@ function PainelObrigacoes({ clientes, profiles, onAtualizar, onFechar, inline })
         {/* Adicionar nova obrigação */}
         <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20, marginBottom: 24 }}>
           <div style={{ fontWeight: 700, color: "#024aab", marginBottom: 14, fontSize: 14 }}>+ Nova Obrigação Padrão</div>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr auto", gap: 12, alignItems: "end" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr auto", gap: 12, alignItems: "end" }}>
             <div>
               <label style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6, display: "block" }}>Tipo</label>
-              <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))} style={{ ...{background:"white",border:"1px solid #94a3b8",borderRadius:8,color:"#0f172a",padding:"8px 12px",fontSize:13,width:"100%",outline:"none"} }}>
-                {["DCTFWEB","ECF","ECD","EFD CONTRIBUIÇÕES","EFD FISCAL","EFD REINF","ESOCIAL","FOLHA","IRPF","PGDAS"].map(t => <option key={t}>{t}</option>)}
+              <select value={form.tipo} onChange={e => handleTipoChange(e.target.value)} style={{ background:"white",border:"1px solid #94a3b8",borderRadius:8,color:"#0f172a",padding:"8px 12px",fontSize:13,width:"100%",outline:"none" }}>
+                {TIPOS.map(t => <option key={t}>{t}</option>)}
               </select>
+              {DEFAULTS_TIPO[form.tipo] && <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>📅 {DEFAULTS_TIPO[form.tipo].descricao_legal}</div>}
             </div>
             <div>
               <label style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6, display: "block" }}>Dia Prazo Interno</label>
               <select value={form.dia_prazo_interno} onChange={e => setForm(f => ({ ...f, dia_prazo_interno: e.target.value }))} style={{ background:"white",border:"1px solid #94a3b8",borderRadius:8,color:"#0f172a",padding:"8px 12px",fontSize:13,width:"100%",outline:"none" }}>
-                {DIAS.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={{ fontSize: 11, color: "#475569", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6, display: "block" }}>Dia Prazo Legal</label>
-              <select value={form.dia_prazo_legal} onChange={e => setForm(f => ({ ...f, dia_prazo_legal: e.target.value }))} style={{ background:"white",border:"1px solid #94a3b8",borderRadius:8,color:"#0f172a",padding:"8px 12px",fontSize:13,width:"100%",outline:"none" }}>
                 {DIAS.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
@@ -1264,7 +1401,7 @@ function PainelObrigacoes({ clientes, profiles, onAtualizar, onFechar, inline })
                 </select>
               </div>
             )}
-            <button onClick={criarObrigacao} disabled={loading} style={{ background:"linear-gradient(135deg,#024aab,#024aab)",border:"none",borderRadius:8,color:"white",padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer",opacity:loading?0.7:1,gridColumn:form.periodicidade==="anual"?"auto":"span 1" }}>Adicionar</button>
+            <button onClick={criarObrigacao} disabled={loading} style={{ background:"#024aab",border:"none",borderRadius:8,color:"white",padding:"8px 18px",fontSize:13,fontWeight:700,cursor:"pointer",opacity:loading?0.7:1 }}>Adicionar</button>
           </div>
         </div>
 
@@ -1602,28 +1739,33 @@ export default function App() {
         const respNome = profiles.find(p => p.id === cliente.responsavel_id)?.nome || "";
 
         for (const ob of obrigacoesCliente) {
-          const diaInt = ob.dia_prazo_interno || 15;
-          const diaLeg = ob.dia_prazo_legal || 20;
+          const comp = `${mes}/${ano}`;
 
-          // Para obrigações anuais, a competência é o ano-calendário (dezembro do ano atual)
-          // mas o prazo de entrega é no ano seguinte
-          let prazoAno = ano;
-          let prazoMes = mes;
+          // Calcula prazo legal automaticamente
+          let prazoLeg = await calcularPrazoLegal(ob.tipo, comp);
+
+          // Para anuais: usa o mês configurado na obrigação no ano seguinte
           if (ob.periodicidade === "anual") {
-            // Prazo cai no ano seguinte usando o mês configurado na obrigação
-            prazoAno = String(parseInt(ano) + 1);
-            prazoMes = String(ob.mes_prazo || 7).padStart(2, "0");
+            const prazoAno = String(parseInt(ano) + 1);
+            const prazoMes = String(ob.mes_prazo || 7).padStart(2, "0");
+            const compAnual = `12/${ano}`; // ECD/ECF sempre referência dezembro
+            prazoLeg = await calcularPrazoLegal(ob.tipo, compAnual);
           }
 
-          const prazoInt = `${prazoAno}-${prazoMes}-${String(diaInt).padStart(2, "0")}`;
-          const prazoLeg = `${prazoAno}-${prazoMes}-${String(diaLeg).padStart(2, "0")}`;
-          const comp = `${mes}/${ano}`;
+          // Prazo interno: dia configurado na obrigação, no mesmo mês do prazo legal
+          const diaInt = ob.dia_prazo_interno || 15;
+          let prazoInt = prazoLeg;
+          if (prazoLeg) {
+            const [pAno, pMes] = prazoLeg.split("-");
+            prazoInt = `${pAno}-${pMes}-${String(diaInt).padStart(2, "0")}`;
+          }
 
           novas.push({
             cliente: cliente.nome, cnpj_cliente: cliente.cnpj || "", codigo_cliente: cliente.codigo || "",
             tipo: ob.tipo, competencia: comp,
             prazo_interno: prazoInt, prazo_legal: prazoLeg, prazo: prazoInt,
             responsavel_id: cliente.responsavel_id || null, responsavel_nome: respNome,
+            revisor_id: cliente.revisor_id || null, revisor_nome: profiles.find(p => p.id === cliente.revisor_id)?.nome || "",
             status: "Pendente", recorrente: true, criado_por: user.id
           });
         }
