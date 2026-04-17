@@ -608,6 +608,27 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
     await carregarTudo();
   }
 
+  const [menuAcoes, setMenuAcoes] = useState(false);
+  const [salvandoStatus, setSalvandoStatus] = useState(false);
+  const menuAcoesRef = useRef(null);
+
+  useEffect(() => {
+    function fechar(e) { if (menuAcoesRef.current && !menuAcoesRef.current.contains(e.target)) setMenuAcoes(false); }
+    document.addEventListener("mousedown", fechar);
+    return () => document.removeEventListener("mousedown", fechar);
+  }, []);
+
+  async function atualizarStatus(novoStatus) {
+    setSalvandoStatus(true);
+    await supabase.from("tarefas").update({ status: novoStatus }).eq("id", tarefa.id);
+    await registrarAtividade(tarefa.id, profile.id, profile.nome, "status", `Status alterado: "${tarefa.status}" → "${novoStatus}"`);
+    tarefa.status = novoStatus;
+    setMenuAcoes(false);
+    await carregarTudo();
+    onAtualizar && onAtualizar();
+    setSalvandoStatus(false);
+  }
+
   async function fecharLimpando() {
     // Remove anexos não salvos ao fechar
     const naoSalvos = anexos.filter(a => !a.salvo && !a.removido);
@@ -671,6 +692,26 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
                   {salvandoVersao ? "Salvando..." : "Salvar"}
                 </button>
               )}
+              {/* Botão Ações */}
+              <div ref={menuAcoesRef} style={{ position: "relative" }}>
+                <button onClick={() => setMenuAcoes(v => !v)}
+                  style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 8, color: "#475569", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                  Ações <span style={{ fontSize: 9 }}>{menuAcoes ? "▲" : "▼"}</span>
+                </button>
+                {menuAcoes && (
+                  <div style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, background: "white", border: "1px solid #e2e8f0", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 999, minWidth: 180, overflow: "hidden" }}>
+                    <div style={{ padding: "8px 14px 4px", fontSize: 10, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 1 }}>Alterar Status</div>
+                    {STATUS_LIST.map(s => (
+                      <button key={s} onClick={() => atualizarStatus(s)} disabled={s === tarefa.status || salvandoStatus}
+                        style={{ display: "block", width: "100%", padding: "9px 16px", fontSize: 13, color: s === tarefa.status ? "#94a3b8" : "#1e293b", background: s === tarefa.status ? "#f8fafc" : "white", border: "none", textAlign: "left", cursor: s === tarefa.status ? "default" : "pointer", fontFamily: "'Inter', sans-serif", fontWeight: s === tarefa.status ? 600 : 400, borderBottom: "1px solid #f8fafc" }}
+                        onMouseEnter={e => { if (s !== tarefa.status) e.currentTarget.style.background = "#f0f6ff"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = s === tarefa.status ? "#f8fafc" : "white"; }}>
+                        {s === tarefa.status ? `✓ ${s}` : s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               {(isAdmin || tarefa.responsavel_id === profile.id) && <button onClick={onEditar} style={{ background: "#dce8f7", border: "none", borderRadius: 8, color: "#024aab", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Editar</button>}
               <button onClick={fecharLimpando} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 24, cursor: "pointer", lineHeight: 1 }}>×</button>
             </div>
