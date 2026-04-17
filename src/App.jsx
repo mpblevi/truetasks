@@ -139,6 +139,7 @@ function GerenciarAcoes({ selecionados, tarefas, profiles, onAtualizar, onLimpar
     if (tipo === "finalizar") {
       if (!window.confirm(`Finalizar ${selecionados.length} tarefa(s)?`)) return;
       await supabase.from("tarefas").update({ status: "Finalizado" }).in("id", selecionados);
+      await Promise.all(tarefasSel.map(t => registrarAtividade(t.id, t.criado_por, t.responsavel_nome || "", "status", `Status alterado: "${t.status}" → "Finalizado"`)));
       onAtualizar(); onLimpar(); return;
     }
     if (tipo === "excluir") {
@@ -147,23 +148,28 @@ function GerenciarAcoes({ selecionados, tarefas, profiles, onAtualizar, onLimpar
       onAtualizar(); onLimpar(); return;
     }
     const updates = [];
+    const atividades = [];
     for (const t of tarefasSel) {
       let u = {};
+      let desc = "";
       if (tipo === "add_participantes") {
         const atual = t.participantes ? t.participantes.split(",").map(p => p.trim()) : [];
         const novos = valor.split(",").map(p => p.trim()).filter(p => p && !atual.includes(p));
         u = { participantes: [...atual, ...novos].join(", ") };
+        desc = `Participantes adicionados: ${novos.join(", ")}`;
       } else if (tipo === "rem_participantes") {
         const remover = valor.split(",").map(p => p.trim().toLowerCase());
         const atual = t.participantes ? t.participantes.split(",").map(p => p.trim()) : [];
         u = { participantes: atual.filter(p => !remover.includes(p.toLowerCase())).join(", ") };
-      } else if (tipo === "responsavel") { u = { responsavel_id: valor, responsavel_nome: profiles.find(p => p.id === valor)?.nome || "" }; }
-      else if (tipo === "revisor") { u = { revisor_id: valor, revisor_nome: profiles.find(p => p.id === valor)?.nome || "" }; }
-      else if (tipo === "status") { u = { status: valor }; }
-      else if (tipo === "vencimento") { u = { prazo_interno: valor || t.prazo_interno, prazo_legal: valor2 || t.prazo_legal }; }
+        desc = `Participantes removidos: ${valor}`;
+      } else if (tipo === "responsavel") { const nome = profiles.find(p => p.id === valor)?.nome || ""; u = { responsavel_id: valor, responsavel_nome: nome }; desc = `Responsável alterado: "${t.responsavel_nome}" → "${nome}"`; }
+      else if (tipo === "revisor") { const nome = profiles.find(p => p.id === valor)?.nome || ""; u = { revisor_id: valor, revisor_nome: nome }; desc = `Revisor alterado: "${t.revisor_nome || "—"}" → "${nome}"`; }
+      else if (tipo === "status") { u = { status: valor }; desc = `Status alterado: "${t.status}" → "${valor}"`; }
+      else if (tipo === "vencimento") { u = { prazo_interno: valor || t.prazo_interno, prazo_legal: valor2 || t.prazo_legal }; desc = `Prazo alterado — Interno: ${formatDate(valor)} | Legal: ${formatDate(valor2)}`; }
       updates.push(supabase.from("tarefas").update(u).eq("id", t.id));
+      if (desc) atividades.push(registrarAtividade(t.id, t.criado_por, t.responsavel_nome || "", tipo, desc));
     }
-    await Promise.all(updates);
+    await Promise.all([...updates, ...atividades]);
     onAtualizar(); onLimpar();
   }
 
@@ -272,7 +278,7 @@ function OpcoesTarefa({ tarefa, onEditar, onReplicar, onAcao, onExcluir, onAtual
     { label: "Reabrir", show: isAdmin, action: () => { onAcao("reabrir", tarefa); setAberto(false); } },
     { label: "Retificar", show: isAdmin, action: () => { onAcao("retificar", tarefa); setAberto(false); } },
     { label: "Replicar", show: isAdmin, action: () => { onReplicar(tarefa); setAberto(false); } },
-    { label: "Finalizar", show: podeEditar, action: async () => { if (window.confirm("Finalizar esta tarefa?")) { await supabase.from("tarefas").update({ status: "Finalizado" }).eq("id", tarefa.id); onAtualizar && onAtualizar(); } setAberto(false); }, success: true },
+    { label: "Finalizar", show: podeEditar, action: async () => { if (window.confirm("Finalizar esta tarefa?")) { await supabase.from("tarefas").update({ status: "Finalizado" }).eq("id", tarefa.id); await registrarAtividade(tarefa.id, tarefa.criado_por, tarefa.responsavel_nome || "", "status", `Status alterado: "${tarefa.status}" → "Finalizado"`); onAtualizar && onAtualizar(); } setAberto(false); }, success: true },
     { label: "Excluir", show: isAdmin, action: () => { onExcluir(tarefa.id); setAberto(false); }, danger: true },
   ].filter(o => o.show);
 
@@ -315,13 +321,16 @@ function ModalAcao({ tipo, tarefa, profiles, onFechar, onSalvar }) {
   async function salvar() {
     setLoading(true);
     let updates = {};
-    if (tipo === "responsavel") updates = { responsavel_id: valor, responsavel_nome: profiles.find(p => p.id === valor)?.nome || "" };
-    else if (tipo === "revisor") updates = { revisor_id: valor, revisor_nome: profiles.find(p => p.id === valor)?.nome || "" };
-    else if (tipo === "status") updates = { status: valor };
-    else if (tipo === "vencimento") updates = { prazo_interno: valor, prazo_legal: valor2 };
-    else if (tipo === "complementar" || tipo === "reabrir") updates = { status: "Pendente", obs: (tarefa.obs ? tarefa.obs + "\n" : "") + `[${tipo === "complementar" ? "Complementar" : "Reaberto"}]: ${valor}` };
+    let descricao = "";
+    const nomeUsuario = tarefa.responsavel_nome || "";
+    if (tipo === "responsavel") { const nome = profiles.find(p => p.id === valor)?.nome || ""; updates = { responsavel_id: valor, responsavel_nome: nome }; descricao = `Responsável alterado: "${tarefa.responsavel_nome}" → "${nome}"`; }
+    else if (tipo === "revisor") { const nome = profiles.find(p => p.id === valor)?.nome || ""; updates = { revisor_id: valor, revisor_nome: nome }; descricao = `Revisor alterado: "${tarefa.revisor_nome || "—"}" → "${nome}"`; }
+    else if (tipo === "status") { updates = { status: valor }; descricao = `Status alterado: "${tarefa.status}" → "${valor}"`; }
+    else if (tipo === "vencimento") { updates = { prazo_interno: valor, prazo_legal: valor2 }; descricao = `Prazo alterado — Interno: ${formatDate(valor)} | Legal: ${formatDate(valor2)}`; }
+    else if (tipo === "complementar" || tipo === "reabrir") { updates = { status: "Pendente", obs: (tarefa.obs ? tarefa.obs + "\n" : "") + `[${tipo === "complementar" ? "Complementar" : "Reaberto"}]: ${valor}` }; descricao = tipo === "complementar" ? `Tarefa complementada: ${valor}` : `Tarefa reaberta: ${valor}`; }
     else if (tipo === "retificar") { await supabase.from("tarefas").insert({ ...tarefa, id: undefined, status: "Pendente", obs: `[Retificação de #${tarefa.id}]: ${valor}`, criado_por: tarefa.criado_por }); setLoading(false); onSalvar(); return; }
     await supabase.from("tarefas").update(updates).eq("id", tarefa.id);
+    if (descricao) await registrarAtividade(tarefa.id, tarefa.criado_por, nomeUsuario, tipo, descricao);
     setLoading(false); onSalvar();
   }
   return (
@@ -1295,6 +1304,10 @@ function ModalReplicar({ tarefa, clientes, profiles, onFechar, onConcluir }) {
 }
 
 // ─── APP PRINCIPAL ──────────────────────────────────────────────────────────
+async function registrarAtividade(tarefaId, usuarioId, usuarioNome, tipo, descricao) {
+  await supabase.from("tarefa_atividades").insert({ tarefa_id: tarefaId, usuario_id: usuarioId, usuario_nome: usuarioNome, tipo, descricao });
+}
+
 export default function App() {
   const [user, setUser] = useState(null); const [profile, setProfile] = useState(null);
   const [tarefas, setTarefas] = useState([]); const [profiles, setProfiles] = useState([]); const [clientes, setClientes] = useState([]);
@@ -1401,7 +1414,21 @@ export default function App() {
     const respNome = profiles.find(p => p.id === form.responsavel_id)?.nome || "";
     const revNome = profiles.find(p => p.id === form.revisor_id)?.nome || "";
     const payload = { cliente: clienteObj?.nome || "", cnpj_cliente: clienteObj?.cnpj || "", codigo_cliente: clienteObj?.codigo || "", tipo: form.tipo, competencia: form.competencia, prazo_interno: form.prazo_interno, prazo_legal: form.prazo_legal, prazo: form.prazo_interno, responsavel_id: form.responsavel_id, responsavel_nome: respNome, revisor_id: form.revisor_id || null, revisor_nome: revNome, participantes: form.participantes, status: editando ? form.status : "Pendente", obs: form.obs, recorrente: form.recorrente, criado_por: user.id };
-    if (editando) { await supabase.from("tarefas").update(payload).eq("id", editando); } else { await supabase.from("tarefas").insert(payload); }
+    if (editando) {
+      const tarefaAtual = tarefas.find(t => t.id === editando);
+      await supabase.from("tarefas").update(payload).eq("id", editando);
+      const mudancas = [];
+      if (tarefaAtual?.status !== payload.status) mudancas.push(`Status: "${tarefaAtual?.status}" → "${payload.status}"`);
+      if (tarefaAtual?.responsavel_nome !== respNome) mudancas.push(`Responsável: "${tarefaAtual?.responsavel_nome}" → "${respNome}"`);
+      if (tarefaAtual?.revisor_nome !== revNome) mudancas.push(`Revisor: "${tarefaAtual?.revisor_nome || "—"}" → "${revNome || "—"}"`);
+      if (tarefaAtual?.prazo_interno !== payload.prazo_interno) mudancas.push(`Prazo Interno: ${formatDate(tarefaAtual?.prazo_interno)} → ${formatDate(payload.prazo_interno)}`);
+      if (tarefaAtual?.prazo_legal !== payload.prazo_legal) mudancas.push(`Prazo Legal: ${formatDate(tarefaAtual?.prazo_legal)} → ${formatDate(payload.prazo_legal)}`);
+      if (tarefaAtual?.participantes !== payload.participantes) mudancas.push(`Participantes atualizados`);
+      if (mudancas.length > 0) await registrarAtividade(editando, user.id, profiles.find(p => p.id === user.id)?.nome || "", "edicao", mudancas.join(" | "));
+    } else {
+      const { data } = await supabase.from("tarefas").insert(payload).select().single();
+      if (data) await registrarAtividade(data.id, user.id, profiles.find(p => p.id === user.id)?.nome || "", "criacao", `Tarefa criada por ${profiles.find(p => p.id === user.id)?.nome || ""}`);
+    }
     await carregarTarefas(); setModal(false); setFormLoading(false);
   }
   async function excluir(id) {
