@@ -571,7 +571,8 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
     if (!file) return;
     setUploading(true);
     setErroUpload("");
-    const caminho = `${tarefa.id}/${Date.now()}_${file.name}`;
+    const nomeSeguro = file.name.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9._\-]/g, "_");
+    const caminho = `${tarefa.id}/${Date.now()}_${nomeSeguro}`;
     const { error } = await supabase.storage.from("anexos").upload(caminho, file);
     if (!error) {
       await supabase.from("tarefa_anexos").insert({ tarefa_id: tarefa.id, usuario_id: profile.id, usuario_nome: profile.nome, nome_arquivo: file.name, caminho, tamanho: file.size, salvo: false });
