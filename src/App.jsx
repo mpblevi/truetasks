@@ -1392,7 +1392,7 @@ export default function App() {
       case "codigo":       return <ComboFiltro value={fCodigo} onChange={setFCodigo} opcoes={uniq(tarefasEnriquecidas.map(t => t.codigo_cliente)).filter(Boolean).slice(1)} placeholder="Código" smStyle={smStyle} />;
       case "cnpj":         return <ComboFiltro value={fCnpj} onChange={setFCnpj} opcoes={uniq(tarefasEnriquecidas.map(t => t.cnpj_cliente)).filter(Boolean).slice(1)} placeholder="CNPJ" smStyle={smStyle} />;
       case "competencia":  return <ComboFiltro value={fComp} onChange={setFComp} opcoes={uniq(tarefasEnriquecidas.map(t => t.competencia)).filter(Boolean).slice(1)} placeholder="Competência" smStyle={smStyle} />;
-      case "tipo":         return <ComboFiltro value={fTipo} onChange={setFTipo} opcoes={TIPOS} placeholder="Tipo" smStyle={smStyle} />;
+      case "tipo":         return <ComboFiltro value={fTipo} onChange={setFTipo} opcoes={TIPOS} placeholder="Tarefa" smStyle={smStyle} />;
       case "prazo_interno":return <DateFiltro value={fPrazoInt} onChange={setFPrazoInt} smStyle={smStyle} />;
       case "prazo_legal":  return <DateFiltro value={fPrazoLeg} onChange={setFPrazoLeg} smStyle={smStyle} />;
       case "responsavel":  return <ComboFiltro value={fResp} onChange={setFResp} opcoes={uniq(tarefasEnriquecidas.map(t => t.responsavel_nome)).filter(Boolean).slice(1)} placeholder="Responsável" smStyle={smStyle} />;
