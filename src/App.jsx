@@ -1108,7 +1108,7 @@ export default function App() {
     { key: "codigo", label: "Código", w: 80 },
     { key: "cnpj", label: "CNPJ", w: 130 },
     { key: "competencia", label: "Competência", w: 110 },
-    { key: "tipo", label: "Tipo", w: 110 },
+    { key: "tipo", label: "Tarefa", w: 160 },
     { key: "prazo_interno", label: "Prazo Interno", w: 120 },
     { key: "prazo_legal", label: "Prazo Legal", w: 120 },
     { key: "responsavel", label: "Responsável", w: 130 },
