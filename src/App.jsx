@@ -607,7 +607,15 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
     await carregarTudo();
   }
 
-  async function baixarAnexo(anexo) {
+  async function fecharLimpando() {
+    // Remove anexos não salvos ao fechar
+    const naoSalvos = anexos.filter(a => !a.salvo && !a.removido);
+    for (const a of naoSalvos) {
+      await supabase.storage.from("anexos").remove([a.caminho]);
+      await supabase.from("tarefa_anexos").delete().eq("id", a.id);
+    }
+    onFechar();
+  }
     if (anexo.removido) return;
     const { data } = await supabase.storage.from("anexos").createSignedUrl(anexo.caminho, 60);
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
@@ -631,7 +639,7 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
   const ABAS = [{ key: "atividade", label: "Atividade" }, { key: "comentarios", label: "Comentários" }, { key: "anexos", label: "Anexos" }];
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 500, padding: 20 }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 500, padding: 20 }} onClick={e => { if (e.target === e.currentTarget) fecharLimpando(); }}>
       <div style={{ background: "white", borderRadius: 16, width: "100%", maxWidth: 700, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 8px 40px rgba(0,0,0,0.2)" }}>
 
         {/* Header */}
@@ -661,7 +669,7 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
                 </button>
               )}
               {(isAdmin || tarefa.responsavel_id === profile.id) && <button onClick={onEditar} style={{ background: "#dce8f7", border: "none", borderRadius: 8, color: "#024aab", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Editar</button>}
-              <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 24, cursor: "pointer", lineHeight: 1 }}>×</button>
+              <button onClick={fecharLimpando} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 24, cursor: "pointer", lineHeight: 1 }}>×</button>
             </div>
           </div>
 
@@ -764,18 +772,19 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
                 <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 13, padding: "20px 0" }}>Nenhum anexo ainda.</div>
               )}
               {anexos.map(a => (
-                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "#f8fafc", border: `1px solid ${a.removido ? "#fca5a5" : "#e2e8f0"}`, borderRadius: 10, padding: "12px 16px", opacity: a.removido ? 0.7 : 1 }}>
+                <div key={a.id} onClick={() => !a.removido && a.salvo && baixarAnexo(a)}
+                  style={{ display: "flex", alignItems: "center", gap: 12, background: "#f8fafc", border: `1px solid ${a.removido ? "#fca5a5" : a.salvo ? "#e2e8f0" : "#fde047"}`, borderRadius: 10, padding: "12px 16px", opacity: a.removido ? 0.6 : 1, cursor: !a.removido && a.salvo ? "pointer" : "default" }}
+                  onMouseEnter={e => { if (!a.removido && a.salvo) e.currentTarget.style.background = "#edf3fb"; }}
+                  onMouseLeave={e => e.currentTarget.style.background = "#f8fafc"}>
                   <span style={{ fontSize: 22 }}>📄</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontWeight: 600, fontSize: 13, color: a.removido ? "#94a3b8" : "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: a.removido ? "line-through" : "none" }}>{a.nome_arquivo}</span>
-                      {!a.salvo && !a.removido && <span style={{ background: "#fef9c3", border: "1px solid #fde047", borderRadius: 4, padding: "1px 6px", fontSize: 10, color: "#854d0e", fontWeight: 600, whiteSpace: "nowrap" }}>Não salvo</span>}
-                      {a.removido && <span style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 4, padding: "1px 6px", fontSize: 10, color: "#dc2626", fontWeight: 600, whiteSpace: "nowrap" }}>Removido</span>}
-                    </div>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: a.removido ? "#94a3b8" : "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: a.removido ? "line-through" : "none" }}>{a.nome_arquivo}</div>
                     <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{formatTamanho(a.tamanho)} · {a.usuario_nome} · {formatTS(a.created_at)}</div>
                   </div>
-                  {!a.removido && <button onClick={() => baixarAnexo(a)} style={{ background: "#dce8f7", border: "none", borderRadius: 7, color: "#024aab", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>Baixar</button>}
-                  {(isAdmin || a.usuario_id === profile.id) && <button onClick={() => excluirAnexo(a)} style={{ background: a.removido ? "#f1f5f9" : "#fee2e2", border: "none", borderRadius: 7, color: a.removido ? "#94a3b8" : "#dc2626", padding: "6px 10px", fontSize: 12, cursor: a.removido ? "default" : "pointer", fontWeight: 600 }} disabled={a.removido}>✕</button>}
+                  {a.removido && <span style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 4, padding: "1px 8px", fontSize: 11, color: "#dc2626", fontWeight: 600, whiteSpace: "nowrap" }}>Removido</span>}
+                  {!a.removido && (isAdmin || a.usuario_id === profile.id) && (
+                    <button onClick={e => { e.stopPropagation(); excluirAnexo(a); }} style={{ background: "#fee2e2", border: "none", borderRadius: 7, color: "#dc2626", padding: "6px 10px", fontSize: 12, cursor: "pointer", fontWeight: 600, flexShrink: 0 }}>✕</button>
+                  )}
                 </div>
               ))}
             </div>
