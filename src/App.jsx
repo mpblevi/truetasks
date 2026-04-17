@@ -525,6 +525,7 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
   const [comentario, setComentario] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [erroUpload, setErroUpload] = useState("");
   const fileRef = useRef(null);
 
   useEffect(() => { carregarAtividades(); carregarAnexos(); }, []);
@@ -552,11 +553,14 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
+    setErroUpload("");
     const caminho = `${tarefa.id}/${Date.now()}_${file.name}`;
     const { error } = await supabase.storage.from("anexos").upload(caminho, file);
     if (!error) {
       await supabase.from("tarefa_anexos").insert({ tarefa_id: tarefa.id, usuario_id: profile.id, usuario_nome: profile.nome, nome_arquivo: file.name, caminho, tamanho: file.size });
       await carregarAnexos();
+    } else {
+      setErroUpload(`Erro ao enviar: ${error.message}`);
     }
     setUploading(false);
     e.target.value = "";
@@ -695,6 +699,7 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
           {/* ABA ANEXOS */}
           {aba === "anexos" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {erroUpload && <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 8, padding: "10px 14px", color: "#dc2626", fontSize: 13 }}>⚠️ {erroUpload}</div>}
               <div onClick={() => fileRef.current?.click()} style={{ border: "2px dashed #cbd5e1", borderRadius: 12, padding: "28px 20px", textAlign: "center", cursor: "pointer", background: "#f8fafc" }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = "#024aab"}
                 onMouseLeave={e => e.currentTarget.style.borderColor = "#cbd5e1"}>
