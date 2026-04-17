@@ -7,7 +7,7 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const DOMAIN = "@truetasks.app";
-const TIPOS = ["DCTFWEB", "ECF", "ECD", "EFD CONTRIBUIÇÕES", "EFD FISCAL", "EFD REINF", "ESOCIAL", "FOLHA", "PGDAS"];
+const TIPOS = ["DCTFWEB", "ECF", "ECD", "EFD CONTRIBUIÇÕES", "EFD FISCAL", "EFD REINF", "ESOCIAL", "PGDAS"];
 const STATUS_LIST = ["Aguardando Cliente", "Em Elaboração", "Enviado por Email", "Finalizado", "Pendente", "Revisão"];
 const SITUACAO_LIST = ["No Prazo", "A Vencer", "Vencido Internamente", "Vencido Legalmente", "Finalizado no Prazo", "Finalizado no Vencimento Legal", "Finalizado em Atraso"];
 
@@ -128,8 +128,7 @@ async function calcularPrazoLegal(tipo, competencia) {
     case "DCTFWEB":
       return ultimoDiaUtilMes(anoRef, mesRef, feriados);
     case "EFD REINF":
-    case "ESOCIAL":
-    case "FOLHA": {
+    case "ESOCIAL": {
       // Dia 15, antecipa se não útil
       const d = new Date(anoRef, mesRef - 1, 15);
       return anteriorUtil(d, feriados);
@@ -1310,7 +1309,6 @@ function PainelObrigacoes({ clientes, profiles, onAtualizar, onFechar, inline })
     "EFD FISCAL":       { dia_prazo_interno: 15, periodicidade: "mensal",  descricao_legal: "Dia 20 do mês subsequente (RJ)" },
     "EFD REINF":        { dia_prazo_interno: 10, periodicidade: "mensal",  descricao_legal: "Dia 15 do mês subsequente (antecipa)" },
     "ESOCIAL":          { dia_prazo_interno: 10, periodicidade: "mensal",  descricao_legal: "Dia 15 do mês subsequente (antecipa)" },
-    "FOLHA":            { dia_prazo_interno: 10, periodicidade: "mensal",  descricao_legal: "Dia 15 do mês subsequente (antecipa)" },
     "PGDAS":            { dia_prazo_interno: 15, periodicidade: "mensal",  descricao_legal: "Dia 20 do mês subsequente (posterga)" },
     "ECD":              { dia_prazo_interno: 15, periodicidade: "anual",   mes_prazo: 6, descricao_legal: "Último dia útil de junho (ano seguinte)" },
     "ECF":              { dia_prazo_interno: 15, periodicidade: "anual",   mes_prazo: 7, descricao_legal: "Último dia útil de julho (ano seguinte)" },
