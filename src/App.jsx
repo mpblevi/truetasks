@@ -508,6 +508,214 @@ function ModalTrocarSenha({ onFechar }) {
   );
 }
 
+// ─── MODAL TAREFA (abas: Atividade, Comentários, Anexos) ──────────────────
+function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar }) {
+  const [aba, setAba] = useState("atividade");
+  const [atividades, setAtividades] = useState([]);
+  const [anexos, setAnexos] = useState([]);
+  const [comentario, setComentario] = useState("");
+  const [salvando, setSalvando] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
+
+  useEffect(() => { carregarAtividades(); carregarAnexos(); }, []);
+
+  async function carregarAtividades() {
+    const { data } = await supabase.from("tarefa_atividades").select("*").eq("tarefa_id", tarefa.id).order("created_at", { ascending: false });
+    setAtividades(data || []);
+  }
+
+  async function carregarAnexos() {
+    const { data } = await supabase.from("tarefa_anexos").select("*").eq("tarefa_id", tarefa.id).order("created_at", { ascending: false });
+    setAnexos(data || []);
+  }
+
+  async function enviarComentario() {
+    if (!comentario.trim()) return;
+    setSalvando(true);
+    await supabase.from("tarefa_atividades").insert({ tarefa_id: tarefa.id, usuario_id: profile.id, usuario_nome: profile.nome, tipo: "comentario", descricao: comentario.trim() });
+    setComentario("");
+    await carregarAtividades();
+    setSalvando(false);
+  }
+
+  async function uploadAnexo(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    const caminho = `${tarefa.id}/${Date.now()}_${file.name}`;
+    const { error } = await supabase.storage.from("anexos").upload(caminho, file);
+    if (!error) {
+      await supabase.from("tarefa_anexos").insert({ tarefa_id: tarefa.id, usuario_id: profile.id, usuario_nome: profile.nome, nome_arquivo: file.name, caminho, tamanho: file.size });
+      await carregarAnexos();
+    }
+    setUploading(false);
+    e.target.value = "";
+  }
+
+  async function excluirAnexo(anexo) {
+    if (!window.confirm(`Remover "${anexo.nome_arquivo}"?`)) return;
+    await supabase.storage.from("anexos").remove([anexo.caminho]);
+    await supabase.from("tarefa_anexos").delete().eq("id", anexo.id);
+    await carregarAnexos();
+  }
+
+  async function baixarAnexo(anexo) {
+    const { data } = await supabase.storage.from("anexos").createSignedUrl(anexo.caminho, 60);
+    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+  }
+
+  function formatTamanho(bytes) {
+    if (!bytes) return "";
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / 1024 / 1024).toFixed(1) + " MB";
+  }
+
+  function formatTS(ts) {
+    if (!ts) return "";
+    const d = new Date(ts);
+    return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+  }
+
+  const stStyle = STATUS_STYLE[tarefa.status] || { bg: "#f1f5f9", border: "#cbd5e1", text: "#475569" };
+  const sitStyle = SITUACAO_STYLE[tarefa.situacaoCalc] || { bg: "#f1f5f9", border: "#cbd5e1", color: "#475569" };
+
+  const ABAS = [{ key: "atividade", label: "Atividade" }, { key: "comentarios", label: "Comentários" }, { key: "anexos", label: "Anexos" }];
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 500, padding: 20 }}>
+      <div style={{ background: "white", borderRadius: 16, width: "100%", maxWidth: 700, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 8px 40px rgba(0,0,0,0.2)" }}>
+
+        {/* Header */}
+        <div style={{ padding: "20px 24px 0", borderBottom: "1px solid #e2e8f0" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
+            <div>
+              <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 17, fontWeight: 800, color: "#1e293b" }}>{tarefa.cliente}</div>
+              <div style={{ display: "flex", gap: 8, marginTop: 6, flexWrap: "wrap", alignItems: "center" }}>
+                <span style={{ background: "#dce8f7", color: "#024aab", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{tarefa.tipo}</span>
+                {tarefa.competencia && <span style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", fontSize: 11, color: "#475569", fontWeight: 600 }}>{tarefa.competencia}</span>}
+                <span style={{ background: stStyle.bg, border: `1px solid ${stStyle.border}`, borderRadius: 20, padding: "2px 10px", fontSize: 11, color: stStyle.text, fontWeight: 600 }}>{tarefa.status}</span>
+                {tarefa.situacaoCalc && <span style={{ background: sitStyle.bg, border: `1px solid ${sitStyle.border}`, borderRadius: 20, padding: "2px 10px", fontSize: 11, color: sitStyle.color, fontWeight: 600 }}>{tarefa.situacaoCalc}</span>}
+              </div>
+              <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 12, color: "#64748b", flexWrap: "wrap" }}>
+                {tarefa.responsavel_nome && <span>Resp: <strong>{tarefa.responsavel_nome}</strong></span>}
+                {tarefa.revisor_nome && <span>Revisor: <strong>{tarefa.revisor_nome}</strong></span>}
+                {tarefa.prazo_interno && <span>Prazo Int: <strong>{formatDate(tarefa.prazo_interno)}</strong></span>}
+                {tarefa.prazo_legal && <span>Prazo Legal: <strong>{formatDate(tarefa.prazo_legal)}</strong></span>}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+              {(isAdmin || tarefa.responsavel_id === profile.id) && <button onClick={onEditar} style={{ background: "#dce8f7", border: "none", borderRadius: 8, color: "#024aab", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Editar</button>}
+              <button onClick={onFechar} style={{ background: "none", border: "none", color: "#94a3b8", fontSize: 24, cursor: "pointer", lineHeight: 1 }}>×</button>
+            </div>
+          </div>
+
+          {/* Abas */}
+          <div style={{ display: "flex", gap: 0 }}>
+            {ABAS.map(a => (
+              <button key={a.key} onClick={() => setAba(a.key)}
+                style={{ padding: "8px 20px", fontSize: 13, fontWeight: aba === a.key ? 700 : 400, color: aba === a.key ? "#024aab" : "#64748b", background: "none", border: "none", borderBottom: aba === a.key ? "2px solid #024aab" : "2px solid transparent", cursor: "pointer", marginBottom: -1 }}>
+                {a.label}
+                {a.key === "comentarios" && atividades.filter(x => x.tipo === "comentario").length > 0 && <span style={{ background: "#024aab", color: "white", borderRadius: 10, padding: "1px 6px", fontSize: 10, marginLeft: 6 }}>{atividades.filter(x => x.tipo === "comentario").length}</span>}
+                {a.key === "anexos" && anexos.length > 0 && <span style={{ background: "#64748b", color: "white", borderRadius: 10, padding: "1px 6px", fontSize: 10, marginLeft: 6 }}>{anexos.length}</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Conteúdo */}
+        <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
+
+          {/* ABA ATIVIDADE */}
+          {aba === "atividade" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {tarefa.obs && (
+                <div style={{ background: "#fef9c3", border: "1px solid #fde047", borderRadius: 10, padding: "12px 16px" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#854d0e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Observações</div>
+                  <div style={{ fontSize: 13, color: "#1e293b", whiteSpace: "pre-wrap" }}>{tarefa.obs}</div>
+                </div>
+              )}
+              {atividades.filter(a => a.tipo !== "comentario").length === 0 && !tarefa.obs && (
+                <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 13, padding: "40px 0" }}>Nenhuma atividade registrada ainda.</div>
+              )}
+              {atividades.filter(a => a.tipo !== "comentario").map(a => (
+                <div key={a.id} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#dce8f7", color: "#024aab", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{(a.usuario_nome || "?")[0].toUpperCase()}</div>
+                  <div style={{ flex: 1, background: "#f8fafc", borderRadius: 10, padding: "10px 14px", border: "1px solid #e2e8f0" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#1e293b" }}>{a.usuario_nome}</span>
+                      <span style={{ fontSize: 11, color: "#94a3b8" }}>{formatTS(a.created_at)}</span>
+                    </div>
+                    <div style={{ fontSize: 13, color: "#475569" }}>{a.descricao}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ABA COMENTÁRIOS */}
+          {aba === "comentarios" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", gap: 10 }}>
+                <textarea value={comentario} onChange={e => setComentario(e.target.value)} placeholder="Escreva um comentário..." rows={3}
+                  style={{ flex: 1, background: "white", border: "1px solid #cbd5e1", borderRadius: 10, padding: "10px 14px", fontSize: 13, fontFamily: "'Inter', sans-serif", resize: "vertical", outline: "none" }} />
+                <button onClick={enviarComentario} disabled={salvando || !comentario.trim()}
+                  style={{ background: "#024aab", border: "none", borderRadius: 10, color: "white", padding: "0 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: !comentario.trim() ? 0.5 : 1, alignSelf: "flex-end", height: 40 }}>
+                  {salvando ? "..." : "Enviar"}
+                </button>
+              </div>
+              {atividades.filter(a => a.tipo === "comentario").length === 0 && (
+                <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 13, padding: "30px 0" }}>Nenhum comentário ainda.</div>
+              )}
+              {atividades.filter(a => a.tipo === "comentario").map(a => (
+                <div key={a.id} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#dce8f7", color: "#024aab", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{(a.usuario_nome || "?")[0].toUpperCase()}</div>
+                  <div style={{ flex: 1, background: "#f8fafc", borderRadius: 10, padding: "10px 14px", border: "1px solid #e2e8f0" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#1e293b" }}>{a.usuario_nome}</span>
+                      <span style={{ fontSize: 11, color: "#94a3b8" }}>{formatTS(a.created_at)}</span>
+                    </div>
+                    <div style={{ fontSize: 13, color: "#1e293b", whiteSpace: "pre-wrap" }}>{a.descricao}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ABA ANEXOS */}
+          {aba === "anexos" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div onClick={() => fileRef.current?.click()} style={{ border: "2px dashed #cbd5e1", borderRadius: 12, padding: "28px 20px", textAlign: "center", cursor: "pointer", background: "#f8fafc" }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = "#024aab"}
+                onMouseLeave={e => e.currentTarget.style.borderColor = "#cbd5e1"}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>📎</div>
+                <div style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>{uploading ? "Enviando..." : "Clique para anexar um arquivo"}</div>
+                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>Qualquer tipo de arquivo</div>
+              </div>
+              <input ref={fileRef} type="file" onChange={uploadAnexo} style={{ display: "none" }} />
+              {anexos.length === 0 && !uploading && (
+                <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 13, padding: "20px 0" }}>Nenhum anexo ainda.</div>
+              )}
+              {anexos.map(a => (
+                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "12px 16px" }}>
+                  <span style={{ fontSize: 22 }}>📄</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.nome_arquivo}</div>
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{formatTamanho(a.tamanho)} · {a.usuario_nome} · {formatTS(a.created_at)}</div>
+                  </div>
+                  <button onClick={() => baixarAnexo(a)} style={{ background: "#dce8f7", border: "none", borderRadius: 7, color: "#024aab", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>Baixar</button>
+                  {isAdmin && <button onClick={() => excluirAnexo(a)} style={{ background: "#fee2e2", border: "none", borderRadius: 7, color: "#dc2626", padding: "6px 10px", fontSize: 12, cursor: "pointer", fontWeight: 600 }}>✕</button>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── MODAL RELATÓRIO / DASHBOARD ──────────────────────────────────────────
 function ModalRelatorio({ tarefas, profiles, onFechar }) {
   const total = tarefas.length;
@@ -1123,6 +1331,7 @@ export default function App() {
 
   const [relatorio, setRelatorio] = useState(false); const [modal, setModal] = useState(false); const [editando, setEditando] = useState(null);
   const [detalhes, setDetalhes] = useState(null);
+  const [modalTarefa, setModalTarefa] = useState(null);
   const [tela, setTela] = useState("tarefas"); // "tarefas" | "clientes" | "obrigacoes" | "usuarios"
   const [obrigacoes, setObrigacoes] = useState([]); const [excecoes, setExcecoes] = useState([]);
   const [modalReplicar, setModalReplicar] = useState(null); const [modalAcao, setModalAcao] = useState(null);
@@ -1421,6 +1630,7 @@ export default function App() {
 
       {modalReplicar && <ModalReplicar tarefa={modalReplicar} clientes={clientes} profiles={profiles} onFechar={() => setModalReplicar(null)} onConcluir={async (n) => { setModalReplicar(null); await carregarTarefas(); setMsgReplicar(`${n} tarefa(s) replicada(s)!`); setTimeout(() => setMsgReplicar(""), 4000); }} />}
       {modalAcao && <ModalAcao tipo={modalAcao.tipo} tarefa={modalAcao.tarefa} profiles={profiles} onFechar={() => setModalAcao(null)} onSalvar={async () => { setModalAcao(null); await carregarTarefas(); }} />}
+      {modalTarefa && <ModalTarefa tarefa={modalTarefa} profile={profile} isAdmin={isAdmin} onFechar={() => setModalTarefa(null)} onEditar={() => { abrirEditar(modalTarefa); setModalTarefa(null); }} onAtualizar={async () => { await carregarTarefas(); }} />}
       {relatorio && <ModalRelatorio tarefas={tarefasEnriquecidas} profiles={profiles} onFechar={() => setRelatorio(false)} />}
       {modalSenha && <ModalTrocarSenha onFechar={() => setModalSenha(false)} />}
 
@@ -1527,14 +1737,15 @@ export default function App() {
                 const sel = selecionados.includes(t.id);
                 return (
                   <tr key={t.id}
-                    style={{ borderBottom: "1px solid #f1f5f9", background: sel ? "#edf3fb" : i % 2 === 0 ? "white" : "#f8fafc" }}
+                    onClick={() => setModalTarefa(t)}
+                    style={{ borderBottom: "1px solid #f1f5f9", background: sel ? "#edf3fb" : i % 2 === 0 ? "white" : "#f8fafc", cursor: "pointer" }}
                     onMouseEnter={e => { if (!sel) e.currentTarget.style.background = "#f1f5f9"; }}
                     onMouseLeave={e => { if (!sel) e.currentTarget.style.background = i % 2 === 0 ? "white" : "#f8fafc"; }}>
-                    <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                    <td style={{ padding: "10px 12px", textAlign: "center" }} onClick={e => e.stopPropagation()}>
                       <input type="checkbox" checked={sel} onChange={() => toggleSel(t.id)} style={{ width: 15, height: 15, cursor: "pointer" }} />
                     </td>
                     {cols.map(c => (
-                      <td key={c.key} style={{ padding: "10px 12px", overflow: "hidden", textAlign: "center" }}>
+                      <td key={c.key} style={{ padding: "10px 12px", overflow: "hidden", textAlign: "center" }} onClick={c.key === "acoes" ? e => e.stopPropagation() : undefined}>
                         {renderCell(c.key, t)}
                       </td>
                     ))}
