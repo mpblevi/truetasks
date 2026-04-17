@@ -77,6 +77,17 @@ function nesimoDiaUtil(ano, mes, n, feriados) {
   }
 }
 
+// N dias úteis antes de uma data
+function nDiasUteisAntes(isoDate, n, feriados) {
+  const d = new Date(isoDate);
+  let count = 0;
+  while (count < n) {
+    d.setDate(d.getDate() - 1);
+    if (isDiaUtil(d, feriados)) count++;
+  }
+  return toISO(d);
+}
+
 // Calcula prazo legal de uma obrigação para uma competência (formato MM/AAAA)
 async function calcularPrazoLegal(tipo, competencia) {
   if (!competencia) return null;
@@ -1752,12 +1763,12 @@ export default function App() {
             prazoLeg = await calcularPrazoLegal(ob.tipo, compAnual);
           }
 
-          // Prazo interno: dia configurado na obrigação, no mesmo mês do prazo legal
-          const diaInt = ob.dia_prazo_interno || 15;
+          // Prazo interno: 2 dias úteis antes do prazo legal
           let prazoInt = prazoLeg;
           if (prazoLeg) {
             const [pAno, pMes] = prazoLeg.split("-");
-            prazoInt = `${pAno}-${pMes}-${String(diaInt).padStart(2, "0")}`;
+            const feriadosInt = await buscarFeriados(parseInt(pAno));
+            prazoInt = nDiasUteisAntes(prazoLeg, 2, feriadosInt);
           }
 
           novas.push({
