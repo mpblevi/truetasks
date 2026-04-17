@@ -553,7 +553,6 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
     await supabase.from("tarefa_versoes").insert({ tarefa_id: tarefa.id, usuario_id: profile.id, usuario_nome: profile.nome, versao: novaVersao });
     await supabase.from("tarefa_anexos").update({ salvo: true, versao: novaVersao }).eq("tarefa_id", tarefa.id).eq("salvo", false);
     await supabase.from("tarefa_atividades").update({ salvo: true, versao: novaVersao }).eq("tarefa_id", tarefa.id).eq("salvo", false).eq("tipo", "comentario");
-    await registrarAtividade(tarefa.id, profile.id, profile.nome, "versao", `Versão ${novaVersao} salva por ${profile.nome}`);
     await carregarTudo();
     setSalvandoVersao(false);
   }
@@ -645,7 +644,7 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
                 {tarefa.competencia && <span style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 6, padding: "2px 8px", fontSize: 11, color: "#475569", fontWeight: 600 }}>{tarefa.competencia}</span>}
                 <span style={{ background: stStyle.bg, border: `1px solid ${stStyle.border}`, borderRadius: 20, padding: "2px 10px", fontSize: 11, color: stStyle.text, fontWeight: 600 }}>{tarefa.status}</span>
                 {tarefa.situacaoCalc && <span style={{ background: sitStyle.bg, border: `1px solid ${sitStyle.border}`, borderRadius: 20, padding: "2px 10px", fontSize: 11, color: sitStyle.color, fontWeight: 600 }}>{tarefa.situacaoCalc}</span>}
-                {versaoAtual > 0 && <span style={{ background: "#f0fdf4", border: "1px solid #22c55e", borderRadius: 20, padding: "2px 10px", fontSize: 11, color: "#15803d", fontWeight: 600 }}>v{versaoAtual}</span>}
+                
               </div>
               <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 12, color: "#64748b", flexWrap: "wrap" }}>
                 {tarefa.responsavel_nome && <span>Resp: <strong>{tarefa.responsavel_nome}</strong></span>}
@@ -658,7 +657,7 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
               {temItensNaoSalvos && (
                 <button onClick={salvarVersao} disabled={salvandoVersao}
                   style={{ background: "#16a34a", border: "none", borderRadius: 8, color: "white", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600, opacity: salvandoVersao ? 0.7 : 1 }}>
-                  {salvandoVersao ? "Salvando..." : "💾 Salvar Versão"}
+                  {salvandoVersao ? "Salvando..." : "Salvar"}
                 </button>
               )}
               {(isAdmin || tarefa.responsavel_id === profile.id) && <button onClick={onEditar} style={{ background: "#dce8f7", border: "none", borderRadius: 8, color: "#024aab", padding: "7px 14px", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Editar</button>}
@@ -773,7 +772,7 @@ function ModalTarefa({ tarefa, profile, isAdmin, onFechar, onEditar, onAtualizar
                       {!a.salvo && !a.removido && <span style={{ background: "#fef9c3", border: "1px solid #fde047", borderRadius: 4, padding: "1px 6px", fontSize: 10, color: "#854d0e", fontWeight: 600, whiteSpace: "nowrap" }}>Não salvo</span>}
                       {a.removido && <span style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 4, padding: "1px 6px", fontSize: 10, color: "#dc2626", fontWeight: 600, whiteSpace: "nowrap" }}>Removido</span>}
                     </div>
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{formatTamanho(a.tamanho)} · {a.usuario_nome} · {formatTS(a.created_at)}{a.versao ? ` · v${a.versao}` : ""}</div>
+                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{formatTamanho(a.tamanho)} · {a.usuario_nome} · {formatTS(a.created_at)}</div>
                   </div>
                   {!a.removido && <button onClick={() => baixarAnexo(a)} style={{ background: "#dce8f7", border: "none", borderRadius: 7, color: "#024aab", padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>Baixar</button>}
                   {(isAdmin || a.usuario_id === profile.id) && <button onClick={() => excluirAnexo(a)} style={{ background: a.removido ? "#f1f5f9" : "#fee2e2", border: "none", borderRadius: 7, color: a.removido ? "#94a3b8" : "#dc2626", padding: "6px 10px", fontSize: 12, cursor: a.removido ? "default" : "pointer", fontWeight: 600 }} disabled={a.removido}>✕</button>}
